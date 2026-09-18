@@ -31,7 +31,7 @@ export default function RegisterPage() {
                     {}
                     <div className="absolute bottom-4 right-5 pointer-events-none select-none flex flex-col items-end opacity-80">
                         <img
-                            src="/kaito-kid-logo.png"
+                            src="/kaito-kid-bg.png"
                             alt="Kaito Kid Icon"
                             className="w-14 h-auto object-contain"
                         />
