@@ -20,7 +20,7 @@ export default function LoginPage() {
             const res = await api.post('/Auth/login', { username, password });
 
             const token = res.data.token || res.data;
-            const role = res.data.role; 
+            const role = res.data.role;
 
             if (token) {
                 const tokenStr = typeof token === 'string' ? token : token.token;
@@ -66,10 +66,11 @@ export default function LoginPage() {
                         <label className="block text-sm font-semibold text-slate-700 mb-1">Tài khoản</label>
                         <input
                             type="text"
+                            name="username"
                             required
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
-                            className="w-full px-4 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 bg-white !text-slate-900 font-medium placeholder:text-slate-400 [&:-webkit-autofill]:[-webkit-text-fill-color:#0f172a] [&:-webkit-autofill]:[transition:background-color_5000s_ease-in-out_0s]"
+                            className="w-full px-4 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 bg-white text-slate-900 font-medium placeholder:text-slate-400 [&:-webkit-autofill]:[-webkit-text-fill-color:#0f172a] [&:-webkit-autofill]:[transition:background-color_5000s_ease-in-out_0s]"
                             placeholder="Nhập username..."
                         />
                     </div>
@@ -78,10 +79,11 @@ export default function LoginPage() {
                         <label className="block text-sm font-semibold text-slate-700 mb-1">Mật khẩu</label>
                         <input
                             type="password"
+                            name="password"
                             required
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            className="w-full px-4 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 bg-white !text-slate-900 font-medium placeholder:text-slate-400 [&:-webkit-autofill]:[-webkit-text-fill-color:#0f172a] [&:-webkit-autofill]:[transition:background-color_5000s_ease-in-out_0s]"
+                            className="w-full px-4 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 bg-white text-slate-900 font-medium placeholder:text-slate-400 [&:-webkit-autofill]:[-webkit-text-fill-color:#0f172a] [&:-webkit-autofill]:[transition:background-color_5000s_ease-in-out_0s]"
                             placeholder="Nhập password..."
                         />
                     </div>
