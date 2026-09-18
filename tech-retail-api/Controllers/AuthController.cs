@@ -56,7 +56,6 @@ namespace ProductManagementAPI.Controllers
         }
 
         [HttpPost("register")]
-        [HttpPost("Register")] 
         public async Task<IActionResult> Register([FromBody] RegisterDto request)
         {
             if (request == null || string.IsNullOrEmpty(request.Username) || string.IsNullOrEmpty(request.Password))

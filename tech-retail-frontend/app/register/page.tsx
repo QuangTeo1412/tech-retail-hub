@@ -26,7 +26,7 @@ export default function RegisterPage() {
         setLoading(true);
 
         try {
-            await api.post('/Auth/Register', formData);
+            await api.post('/Auth/register', formData);
             alert('Đăng ký tài khoản thành công! Hãy đăng nhập.');
             router.push('/login');
         } catch (err: unknown) {
