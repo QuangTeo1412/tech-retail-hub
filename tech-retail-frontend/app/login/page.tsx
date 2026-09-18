@@ -1,4 +1,5 @@
 ﻿'use client';
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -6,10 +7,13 @@ import api from '@/lib/api';
 
 export default function LoginPage() {
     const router = useRouter();
-    const [username, setUsername] = useState('');
-    const [password, setPassword] = useState('');
+    const [formData, setFormData] = useState({ username: '', password: '' });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -17,89 +21,87 @@ export default function LoginPage() {
         setLoading(true);
 
         try {
-            const res = await api.post('/Auth/login', { username, password });
-
-            const token = res.data.token || res.data;
-            const role = res.data.role;
+            const response = await api.post('/Auth/login', formData);
+            const { token, role } = response.data;
 
             if (token) {
-                const tokenStr = typeof token === 'string' ? token : token.token;
-                localStorage.setItem('token', tokenStr);
+                localStorage.setItem('token', typeof token === 'string' ? token : token.token);
                 if (role) localStorage.setItem('role', role);
 
-                alert('Đăng nhập thành công!');
-
                 if (role === 'Admin') {
-                    router.push('/admin/dashboard');
+                    window.location.href = '/admin/dashboard';
                 } else {
-                    router.push('/');
+                    window.location.href = '/';
                 }
             }
         } catch (err: unknown) {
-            console.error('Login Error:', err);
-            const errorObj = err as { response?: { data?: { message?: string } | string } };
-            const msg = typeof errorObj.response?.data === 'string'
-                ? errorObj.response.data
-                : errorObj.response?.data?.message;
-
-            setError(msg || 'Đăng nhập thất bại. Kiểm tra lại tài khoản/mật khẩu của bạn!');
+            const errorObj = err as { response?: { data?: { message?: string } } };
+            setError(errorObj.response?.data?.message || 'Đăng nhập thất bại!');
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
-            <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-sky-100 p-8">
-                <h2 className="text-2xl font-black text-center text-slate-800 mb-6">
-                    ĐĂNG NHẬP <span className="text-sky-600">KAITOSTORE</span>
-                </h2>
+        <div className="relative flex min-h-screen items-center justify-center bg-gray-50 p-4 font-sans antialiased">
+            {/* Header / Logo thương hiệu góc trên bên trái */}
+            <header className="absolute top-0 left-0 p-6">
+                <Link href="/" className="text-2xl font-black tracking-wider text-blue-600 hover:opacity-80 transition-opacity">
+                    KAITOSTORE
+                </Link>
+            </header>
+
+            {/* Card Form Đăng Nhập */}
+            <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg border border-gray-100">
+                <h1 className="mb-8 text-center text-3xl font-extrabold text-gray-900 tracking-tight">
+                    ĐĂNG NHẬP
+                </h1>
 
                 {error && (
-                    <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm">
+                    <div className="mb-6 rounded-lg bg-red-50 p-3 text-sm font-medium text-red-600 border border-red-200 text-center">
                         {error}
                     </div>
                 )}
 
-                <form onSubmit={handleLogin} className="space-y-4">
+                <form onSubmit={handleLogin} className="space-y-5">
                     <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-1">Tài khoản</label>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1">Tài khoản</label>
                         <input
                             type="text"
                             name="username"
                             required
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
-                            className="w-full px-4 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 bg-white text-slate-900 font-medium placeholder:text-slate-400 [&:-webkit-autofill]:[-webkit-text-fill-color:#0f172a] [&:-webkit-autofill]:[transition:background-color_5000s_ease-in-out_0s]"
-                            placeholder="Nhập username..."
+                            placeholder="Nhập tên tài khoản"
+                            value={formData.username}
+                            onChange={handleChange}
+                            className="w-full rounded-lg border border-gray-300 p-3 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all"
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-1">Mật khẩu</label>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1">Mật khẩu</label>
                         <input
                             type="password"
                             name="password"
                             required
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="w-full px-4 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 bg-white text-slate-900 font-medium placeholder:text-slate-400 [&:-webkit-autofill]:[-webkit-text-fill-color:#0f172a] [&:-webkit-autofill]:[transition:background-color_5000s_ease-in-out_0s]"
-                            placeholder="Nhập password..."
+                            placeholder="Nhập mật khẩu"
+                            value={formData.password}
+                            onChange={handleChange}
+                            className="w-full rounded-lg border border-gray-300 p-3 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all"
                         />
                     </div>
 
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full py-3 bg-sky-600 text-white font-bold rounded-xl hover:bg-sky-700 transition duration-200 shadow-md shadow-sky-200 disabled:opacity-50 mt-2"
+                        className="w-full rounded-lg bg-blue-600 py-3 text-base font-bold text-white shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:bg-gray-400 transition-all"
                     >
-                        {loading ? 'Đang xác thực...' : 'Đăng Nhập'}
+                        {loading ? 'Đang xác thực...' : 'Đăng nhập'}
                     </button>
                 </form>
 
-                <p className="mt-4 text-center text-sm text-slate-600">
+                <p className="mt-6 text-center text-sm font-medium text-gray-600">
                     Chưa có tài khoản?{' '}
-                    <Link href="/register" className="text-sky-600 font-semibold hover:underline">
+                    <Link href="/register" className="font-bold text-blue-600 hover:underline">
                         Đăng ký ngay
                     </Link>
                 </p>

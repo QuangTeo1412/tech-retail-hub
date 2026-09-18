@@ -9,9 +9,9 @@ export default function RegisterPage() {
     const router = useRouter();
     const [formData, setFormData] = useState({
         username: '',
-        password: '',
         fullName: '',
         email: '',
+        password: '',
     });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -38,79 +38,91 @@ export default function RegisterPage() {
     };
 
     return (
-        <div className="flex min-h-screen items-center justify-center bg-gray-100 p-4">
-            <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-md">
-                <h2 className="mb-6 text-center text-2xl font-bold text-gray-800">
-                    Đăng ký tài khoản
-                </h2>
+        <div className="relative flex min-h-screen items-center justify-center bg-gray-50 p-4 font-sans antialiased">
+            {/* Header / Logo thương hiệu góc trên bên trái */}
+            <header className="absolute top-0 left-0 p-6">
+                <Link href="/" className="text-2xl font-black tracking-wider text-blue-600 hover:opacity-80 transition-opacity">
+                    KAITOSTORE
+                </Link>
+            </header>
+
+            {/* Card Form Đăng Ký */}
+            <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg border border-gray-100">
+                <h1 className="mb-8 text-center text-3xl font-extrabold text-gray-900 tracking-tight">
+                    ĐĂNG KÝ
+                </h1>
 
                 {error && (
-                    <div className="mb-4 rounded bg-red-100 p-3 text-sm text-red-600">
+                    <div className="mb-6 rounded-lg bg-red-50 p-3 text-sm font-medium text-red-600 border border-red-200 text-center">
                         {error}
                     </div>
                 )}
 
                 <form onSubmit={handleRegister} className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Tên đăng nhập</label>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1">Tên đăng nhập</label>
                         <input
                             type="text"
                             name="username"
                             required
+                            placeholder="Nhập tên đăng nhập"
                             value={formData.username}
                             onChange={handleChange}
-                            className="mt-1 w-full rounded-md border p-2 text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full rounded-lg border border-gray-300 p-3 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all"
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Họ và tên</label>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1">Họ và tên</label>
                         <input
                             type="text"
                             name="fullName"
                             required
+                            placeholder="Nhập họ và tên"
                             value={formData.fullName}
                             onChange={handleChange}
-                            className="mt-1 w-full rounded-md border p-2 text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full rounded-lg border border-gray-300 p-3 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all"
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Email</label>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1">Email</label>
                         <input
                             type="email"
                             name="email"
                             required
+                            placeholder="example@gmail.com"
                             value={formData.email}
                             onChange={handleChange}
-                            className="mt-1 w-full rounded-md border p-2 text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full rounded-lg border border-gray-300 p-3 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all"
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Mật khẩu</label>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1">Mật khẩu</label>
                         <input
                             type="password"
                             name="password"
                             required
+                            placeholder="Nhập mật khẩu"
                             value={formData.password}
                             onChange={handleChange}
-                            className="mt-1 w-full rounded-md border p-2 text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full rounded-lg border border-gray-300 p-3 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all"
                         />
                     </div>
 
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full rounded-md bg-blue-600 py-2 text-white hover:bg-blue-700 disabled:bg-gray-400"
+                        className="w-full rounded-lg bg-blue-600 py-3 text-base font-bold text-white shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:bg-gray-400 transition-all mt-2"
                     >
                         {loading ? 'Đang xử lý...' : 'Đăng ký'}
                     </button>
                 </form>
 
-                <p className="mt-4 text-center text-sm text-gray-600">
+                <p className="mt-6 text-center text-sm font-medium text-gray-600">
                     Đã có tài khoản?{' '}
-                    <Link href="/login" className="text-blue-600 hover:underline">
+                    <Link href="/login" className="font-bold text-blue-600 hover:underline">
                         Đăng nhập ngay
                     </Link>
                 </p>
