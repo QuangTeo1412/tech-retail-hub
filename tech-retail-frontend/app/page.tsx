@@ -16,6 +16,178 @@ const FEATURED_LAPTOPS = [
     { id: 10, name: 'Laptop ASUS TUF Gaming A15 - Ryzen 7 7735HS, RTX 4050', price: '23.490.000đ', oldPrice: '26.990.000đ', discount: '-13%', badge: 'BÁN CHẠY', image: 'https://images.unsplash.com/photo-1541807084-5c52b6b3adef?q=80&w=600' },
 ];
 
+function Footer() {
+    return (
+        <footer className="bg-white text-gray-700 text-xs border-t border-gray-200 pt-10 pb-12 mt-12">
+            <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <div className="space-y-6">
+                    <div>
+                        <h3 className="font-bold text-sm text-gray-900 mb-2">Tổng đài hỗ trợ miễn phí</h3>
+                        <p className="mb-1">
+                            Mua hàng - bảo hành <span className="font-bold text-gray-900">1800.2097</span> (7h30 - 22h00)
+                        </p>
+                        <p>
+                            Khiếu nại <span className="font-bold text-gray-900">1800.2063</span> (8h00 - 21h30)
+                        </p>
+                    </div>
+
+                    <div>
+                        <h3 className="font-bold text-sm text-gray-900 mb-2">Phương thức thanh toán</h3>
+                        <div className="flex flex-wrap gap-2">
+                            <span className="px-2 py-1 border border-gray-200 rounded font-semibold text-[10px]">🍎Pay</span>
+                            <span className="px-2 py-1 border border-gray-200 rounded font-bold text-blue-600 text-[10px]">VNPAY</span>
+                            <span className="px-2 py-1 border border-gray-200 rounded font-bold text-pink-600 text-[10px]">momo</span>
+                            <span className="px-2 py-1 border border-gray-200 rounded font-bold text-blue-500 text-[10px]">OnePAY</span>
+                            <span className="px-2 py-1 border border-gray-200 rounded font-bold text-orange-500 text-[10px]">Kredivo</span>
+                            <span className="px-2 py-1 border border-gray-200 rounded font-bold text-blue-400 text-[10px]">ZaloPay</span>
+                            <span className="px-2 py-1 border border-gray-200 rounded font-bold text-sky-500 text-[10px]">Fundiin</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 className="font-bold text-sm text-gray-900 uppercase mb-2">ĐĂNG KÝ NHẬN TIN KHUYẾN MÃI</h3>
+                        <div className="bg-gray-50 p-3 rounded-lg border border-gray-100 mb-3">
+                            <span className="text-red-600 font-bold block mb-1">Nhận ngay voucher 10%</span>
+                            <p className="text-[11px] text-gray-500 leading-tight">
+                                Voucher sẽ được gửi sau 24h, chỉ áp dụng cho khách hàng mới
+                            </p>
+                        </div>
+
+                        <form onSubmit={(e) => e.preventDefault()} className="space-y-2">
+                            <div>
+                                <label className="block text-gray-600 font-medium mb-1">Email</label>
+                                <input
+                                    type="email"
+                                    placeholder="Nhập email của bạn"
+                                    className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-gray-600 font-medium mb-1">Số điện thoại</label>
+                                <input
+                                    type="tel"
+                                    placeholder="Nhập số điện thoại của bạn"
+                                    className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500"
+                                />
+                            </div>
+                            <button
+                                type="submit"
+                                className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded-lg transition-colors mt-2"
+                            >
+                                Đăng ký ngay
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 className="font-bold text-sm text-gray-900 mb-3">Thông tin và chính sách</h3>
+                    <ul className="space-y-2 text-gray-600">
+                        <li><Link href="#" className="hover:text-blue-600">Mua hàng và thanh toán Online</Link></li>
+                        <li><Link href="#" className="hover:text-blue-600">Mua hàng trả góp</Link></li>
+                        <li><Link href="#" className="hover:text-blue-600">Mua hàng trả góp bằng thẻ tín dụng</Link></li>
+                        <li><Link href="#" className="hover:text-blue-600">Chính sách giao hàng</Link></li>
+                        <li><Link href="#" className="hover:text-blue-600">Chính sách đổi trả</Link></li>
+                        <li><Link href="#" className="hover:text-blue-600">Tra điểm Smember</Link></li>
+                        <li><Link href="#" className="hover:text-blue-600">Xem ưu đãi Smember</Link></li>
+                        <li><Link href="#" className="hover:text-blue-600">Tra thông tin bảo hành</Link></li>
+                        <li><Link href="#" className="hover:text-blue-600">Tra cứu hoá đơn điện tử</Link></li>
+                        <li><Link href="#" className="hover:text-blue-600">Thông tin hoá đơn mua hàng</Link></li>
+                        <li><Link href="#" className="hover:text-blue-600">Trung tâm bảo hành chính hãng</Link></li>
+                        <li><Link href="#" className="hover:text-blue-600">Quy định về việc sao lưu dữ liệu</Link></li>
+                        <li><Link href="#" className="hover:text-blue-600">Chính sách khui hộp sản phẩm Apple</Link></li>
+                        <li><Link href="#" className="hover:text-blue-600">VAT Refund</Link></li>
+                    </ul>
+                </div>
+
+                <div className="space-y-6">
+                    <div>
+                        <h3 className="font-bold text-sm text-gray-900 mb-3">Dịch vụ và thông tin khác</h3>
+                        <ul className="space-y-2 text-gray-600">
+                            <li><Link href="#" className="hover:text-blue-600">Khách hàng doanh nghiệp (B2B)</Link></li>
+                            <li><Link href="#" className="hover:text-blue-600">Ưu đãi thanh toán</Link></li>
+                            <li><Link href="#" className="hover:text-blue-600">Quy chế hoạt động</Link></li>
+                            <li><Link href="#" className="hover:text-blue-600">Chính sách bảo mật thông tin cá nhân</Link></li>
+                            <li><Link href="#" className="hover:text-blue-600">Chính sách bảo mật dữ liệu đánh giá trên Zalo mini app</Link></li>
+                            <li><Link href="#" className="hover:text-blue-600">Chính sách Bảo hành</Link></li>
+                            <li><Link href="#" className="hover:text-blue-600">Liên hệ hợp tác kinh doanh</Link></li>
+                            <li><Link href="#" className="hover:text-blue-600">Tuyển dụng</Link></li>
+                            <li><Link href="#" className="hover:text-blue-600">Dịch vụ bảo hành mở rộng</Link></li>
+                            <li><Link href="#" className="hover:text-blue-600">YouTube Shopping Affiliate</Link></li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <h3 className="font-bold text-sm text-gray-900 mb-2">
+                            Mua sắm dễ dàng – Ưu đãi ngập tràn cùng app KaitoStore
+                        </h3>
+                        <div className="flex items-center gap-3 mt-3">
+                            <div className="w-20 h-20 bg-gray-900 text-white p-1.5 rounded-lg flex flex-col items-center justify-center flex-shrink-0">
+                                <span className="text-[8px] font-bold tracking-widest uppercase">KAITO</span>
+                                <div className="w-12 h-12 border-2 border-white my-0.5 flex items-center justify-center text-[8px]">
+                                    QR CODE
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col gap-2">
+                                <button className="bg-black text-white px-3 py-1.5 rounded-lg text-[10px] font-bold flex items-center gap-1.5 hover:bg-gray-800">
+                                    <span>▶</span> Google Play
+                                </button>
+                                <button className="bg-black text-white px-3 py-1.5 rounded-lg text-[10px] font-bold flex items-center gap-1.5 hover:bg-gray-800">
+                                    <span>🍎</span> App Store
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="space-y-6">
+                    <div>
+                        <h3 className="font-bold text-sm text-gray-900 mb-3">Kết nối với KaitoStore</h3>
+                        <div className="flex items-center gap-2">
+                            <span className="w-8 h-8 rounded-full bg-red-600 text-white flex items-center justify-center font-bold text-xs cursor-pointer hover:opacity-80">▶</span>
+                            <span className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs cursor-pointer hover:opacity-80">f</span>
+                            <span className="w-8 h-8 rounded-full bg-pink-600 text-white flex items-center justify-center font-bold text-xs cursor-pointer hover:opacity-80">📷</span>
+                            <span className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center font-bold text-xs cursor-pointer hover:opacity-80">🎵</span>
+                            <span className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold text-xs cursor-pointer hover:opacity-80">Zalo</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 className="font-bold text-sm text-gray-900 mb-3">Website thành viên</h3>
+                        <div className="space-y-3">
+                            <div>
+                                <p className="text-[11px] text-gray-500 mb-1">Hệ thống bảo hành và chăm sóc Điện thoại - Máy tính</p>
+                                <span className="inline-block bg-red-600 text-white font-black px-2.5 py-1 rounded text-xs uppercase tracking-wider">
+                                    dienthoaivui
+                                </span>
+                            </div>
+                            <div>
+                                <p className="text-[11px] text-gray-500 mb-1">Trung tâm bảo hành uỷ quyền Apple</p>
+                                <span className="inline-block bg-slate-900 text-white font-bold px-2 py-1 rounded text-xs">
+                                    care <span className="bg-red-600 text-white px-1 rounded text-[10px]">S</span>
+                                </span>
+                            </div>
+                            <div>
+                                <p className="text-[11px] text-gray-500 mb-1">Kênh thông tin giải trí công nghệ cho giới trẻ</p>
+                                <span className="inline-block bg-red-500 text-white font-bold px-2 py-0.5 rounded text-xs">
+                                    SChannel
+                                </span>
+                            </div>
+                            <div>
+                                <p className="text-[11px] text-gray-500 mb-1">Trang thông tin công nghệ mới nhất</p>
+                                <span className="inline-block bg-red-600 text-white font-bold px-2 py-0.5 rounded text-xs">
+                                    Sforum.vn
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    );
+}
+
 export default function HomePage() {
     const [cartCount, setCartCount] = useState(2);
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -39,8 +211,6 @@ export default function HomePage() {
 
     return (
         <div className="min-h-screen bg-[#f8f9fa] text-slate-800 font-sans antialiased">
-
-            {}
             <header className="bg-white border-b border-gray-100 sticky top-0 z-50 shadow-sm">
                 <div className="max-w-7xl mx-auto px-4 py-3.5 flex items-center justify-between gap-4">
                     <Link href="/" className="text-2xl font-black text-blue-600 tracking-wider flex-shrink-0">
@@ -78,7 +248,6 @@ export default function HomePage() {
                     </div>
                 </div>
 
-                {}
                 <div className="bg-[#111827] text-white text-xs font-bold py-3">
                     <div className="max-w-7xl mx-auto px-4 flex items-center gap-8 overflow-x-auto whitespace-nowrap">
                         <span className="cursor-pointer hover:text-blue-400 flex items-center gap-2">💻 Laptop Mới</span>
@@ -91,11 +260,8 @@ export default function HomePage() {
                 </div>
             </header>
 
-            {}
             <section className="max-w-7xl mx-auto px-4 py-6">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-stretch">
-
-                    {}
                     <div className="lg:col-span-2 relative rounded-2xl overflow-hidden min-h-[320px] bg-slate-950 text-white p-8 flex flex-col justify-between shadow-sm">
                         <img
                             src="https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1200"
@@ -120,7 +286,6 @@ export default function HomePage() {
                         </div>
                     </div>
 
-                    { }
                     <div className="flex flex-col gap-4">
                         <div className="flex-1 relative rounded-2xl overflow-hidden p-6 text-white flex flex-col justify-between min-h-[155px] shadow-sm">
                             <img
@@ -160,13 +325,10 @@ export default function HomePage() {
                             </span>
                         </div>
                     </div>
-
                 </div>
             </section>
 
-            {/* 3. KHU VỰC LAPTOP NỔI BẬT */}
             <section className="max-w-7xl mx-auto px-4 py-6">
-                {/* Đã bỏ 2 cái badge ghi chú thừa ở dòng tiêu đề */}
                 <div className="mb-4">
                     <h2 className="text-xl font-extrabold uppercase text-slate-900 tracking-tight">
                         LAPTOP NỔI BẬT
@@ -226,7 +388,6 @@ export default function HomePage() {
                 </div>
             </section>
 
-            {/* 4. THANH CAM KẾT & BẢO HÀNH GÓC DƯỚI (KHÔI PHỤC ĐẦY ĐỦ) */}
             <section className="max-w-7xl mx-auto px-4 py-8 border-t border-gray-200/80 mt-6">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
                     <div className="flex flex-col items-center">
@@ -252,6 +413,7 @@ export default function HomePage() {
                 </div>
             </section>
 
+            <Footer />
         </div>
     );
 }
