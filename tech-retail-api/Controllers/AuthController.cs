@@ -74,6 +74,7 @@ namespace ProductManagementAPI.Controllers
             );
 
             return new JwtSecurityTokenHandler().WriteToken(token);
+        
         }
     }
 }
