@@ -17,7 +17,7 @@ builder.Services.AddCors(options =>
               .AllowAnyMethod()
               .AllowCredentials();
     });
-});
+}); 
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddScoped<IEmailService, EmailService>();
