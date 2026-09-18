@@ -1,110 +1,119 @@
 ﻿'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import api from '@/lib/api';
 
 export default function LoginPage() {
-    const router = useRouter();
-    const [formData, setFormData] = useState({ username: '', password: '' });
-    const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false);
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
-    };
-
-    const handleLogin = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setError('');
-        setLoading(true);
-
-        try {
-            const response = await api.post('/Auth/login', formData);
-            const { token, role } = response.data;
-
-            if (token) {
-                localStorage.setItem('token', typeof token === 'string' ? token : token.token);
-                if (role) localStorage.setItem('role', role);
-
-                if (role === 'Admin') {
-                    window.location.href = '/admin/dashboard';
-                } else {
-                    window.location.href = '/';
-                }
-            }
-        } catch (err: unknown) {
-            const errorObj = err as { response?: { data?: { message?: string } } };
-            setError(errorObj.response?.data?.message || 'Đăng nhập thất bại!');
-        } finally {
-            setLoading(false);
-        }
-    };
+    const [showPassword, setShowPassword] = useState(false);
 
     return (
-        <div className="relative flex min-h-screen items-center justify-center bg-gray-50 p-6 font-sans antialiased">
+        <div className="min-h-screen bg-slate-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans antialiased relative overflow-hidden">
             {}
-            <header className="absolute top-0 left-0 p-8">
-                <Link href="/" className="text-3xl font-black tracking-wider text-blue-600 hover:opacity-80 transition-opacity">
-                    KAITO STORE
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.15)_0,transparent_70%)] pointer-events-none" />
+
+            <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
+                <Link href="/" className="flex justify-center mb-2">
+                    <span className="text-3xl font-black text-white tracking-widest hover:scale-105 transition-transform drop-shadow-[0_2px_10px_rgba(59,130,246,0.5)]">
+                        KAITO STORE
+                    </span>
                 </Link>
-            </header>
+            </div>
 
             {}
-            <div className="w-full max-w-lg rounded-2xl bg-white p-10 shadow-xl border border-gray-100">
-                <h1 className="mb-8 text-center text-3xl font-extrabold text-gray-900 tracking-tight">
-                    ĐĂNG NHẬP
-                </h1>
+            <div className="mt-4 sm:mx-auto sm:w-full sm:max-w-md px-4 relative z-10">
+                <div className="bg-white py-10 px-8 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7)] rounded-3xl border-4 border-gray-100 relative overflow-hidden transition-all duration-300">
 
-                {error && (
-                    <div className="mb-6 rounded-lg bg-red-50 p-3.5 text-sm font-medium text-red-600 border border-red-200 text-center">
-                        {error}
-                    </div>
-                )}
+                    {}
+                    <div className="absolute inset-2 border border-gray-200/80 rounded-2xl pointer-events-none" />
 
-                <form onSubmit={handleLogin} className="space-y-6">
-                    <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">Tài khoản</label>
-                        <input
-                            type="text"
-                            name="username"
-                            required
-                            placeholder="Nhập tên tài khoản"
-                            value={formData.username}
-                            onChange={handleChange}
-                            className="w-full rounded-xl border border-gray-300 p-3.5 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all text-base"
-                        />
+                    {}
+                    <div className="absolute bottom-3 right-4 opacity-15 pointer-events-none select-none flex flex-col items-end">
+                        <div className="text-[10px] font-black tracking-widest text-slate-800">1412</div>
+                        <div className="w-12 h-12 border-2 border-slate-800 rounded-full flex items-center justify-center text-xs font-black">
+                            K.K
+                        </div>
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">Mật khẩu</label>
-                        <input
-                            type="password"
-                            name="password"
-                            required
-                            placeholder="Nhập mật khẩu"
-                            value={formData.password}
-                            onChange={handleChange}
-                            className="w-full rounded-xl border border-gray-300 p-3.5 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all text-base"
-                        />
+                    <div className="relative z-10">
+                        <h2 className="text-center text-2xl font-black text-gray-900 tracking-tight uppercase mb-1">
+                            Thư Thách Đấu
+                        </h2>
+                        <p className="text-center text-xs text-gray-400 mb-6 font-medium">
+                            Đăng nhập để giải mã kho báu công nghệ
+                        </p>
+
+                        <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+                            <div>
+                                <label htmlFor="account" className="block text-[11px] font-black text-gray-600 uppercase tracking-wider mb-1">
+                                    Email / Số điện thoại
+                                </label>
+                                <input
+                                    id="account"
+                                    name="account"
+                                    type="text"
+                                    required
+                                    placeholder="phantom@gmail.com"
+                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 px-4 text-sm focus:outline-none focus:border-blue-600 focus:bg-white focus:ring-4 focus:ring-blue-50/50 transition-all"
+                                />
+                            </div>
+
+                            <div>
+                                <div className="flex items-center justify-between mb-1">
+                                    <label htmlFor="password" className="block text-[11px] font-black text-gray-600 uppercase tracking-wider">
+                                        Mật khẩu bí mật
+                                    </label>
+                                    <a href="#" className="text-[11px] font-bold text-blue-600 hover:underline">
+                                        Quên?
+                                    </a>
+                                </div>
+                                <div className="relative">
+                                    <input
+                                        id="password"
+                                        name="password"
+                                        type={showPassword ? 'text' : 'password'}
+                                        required
+                                        placeholder="••••••••"
+                                        className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 pl-4 pr-11 text-sm focus:outline-none focus:border-blue-600 focus:bg-white focus:ring-4 focus:ring-blue-50/50 transition-all"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 p-1"
+                                    >
+                                        {showPassword ? (
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="w-5 h-5">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.573 16.49 16.638 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            </svg>
+                                        ) : (
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="w-5 h-5">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+                                            </svg>
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="pt-3">
+                                <button
+                                    type="submit"
+                                    className="w-full bg-slate-900 text-white font-black text-base py-4 rounded-xl shadow-lg hover:bg-blue-600 active:scale-95 transition-all duration-200 tracking-[0.2em] uppercase"
+                                >
+                                    ĐĂNG NHẬP
+                                </button>
+                            </div>
+                        </form>
+
+                        <div className="mt-6 border-t border-gray-100 pt-4 text-center">
+                            <p className="text-xs text-gray-500">
+                                Chưa có danh tính?{' '}
+                                <Link href="/register" className="font-extrabold text-blue-600 hover:underline">
+                                    Nhận thẻ đăng ký
+                                </Link>
+                            </p>
+                        </div>
                     </div>
-
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full rounded-xl bg-blue-600 py-3.5 text-base font-bold text-white shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:bg-gray-400 transition-all mt-2"
-                    >
-                        {loading ? 'Đang xác thực...' : 'Đăng nhập'}
-                    </button>
-                </form>
-
-                <p className="mt-8 text-center text-sm font-medium text-gray-600">
-                    Chưa có tài khoản?{' '}
-                    <Link href="/register" className="font-bold text-blue-600 hover:underline">
-                        Đăng ký ngay
-                    </Link>
-                </p>
+                </div>
             </div>
         </div>
     );
