@@ -9,7 +9,7 @@ export default function HomePage() {
             <header className="bg-white shadow-sm border-b">
                 <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
                     <Link href="/" className="text-2xl font-black text-blue-600 tracking-wide">
-                        KAITOSTORE
+                        KAITO STORE
                     </Link>
 
                     <div className="flex items-center space-x-4">

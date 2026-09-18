@@ -42,7 +42,7 @@ export default function RegisterPage() {
             {}
             <header className="absolute top-0 left-0 p-8">
                 <Link href="/" className="text-3xl font-black tracking-wider text-blue-600 hover:opacity-80 transition-opacity">
-                    KAITOSTORE
+                    KAITO STORE
                 </Link>
             </header>
 
