@@ -1,6 +1,7 @@
 ﻿'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import api from '@/lib/api';
 
 export default function LoginPage() {
@@ -19,10 +20,20 @@ export default function LoginPage() {
             const res = await api.post('/Auth/login', { username, password });
 
             const token = res.data.token || res.data;
+            const role = res.data.role; 
+
             if (token) {
-                localStorage.setItem('token', typeof token === 'string' ? token : token.token);
+                const tokenStr = typeof token === 'string' ? token : token.token;
+                localStorage.setItem('token', tokenStr);
+                if (role) localStorage.setItem('role', role);
+
                 alert('Đăng nhập thành công!');
-                router.push('/');
+
+                if (role === 'Admin') {
+                    router.push('/admin/dashboard');
+                } else {
+                    router.push('/');
+                }
             }
         } catch (err: unknown) {
             console.error('Login Error:', err);
@@ -58,7 +69,7 @@ export default function LoginPage() {
                             required
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
-                            className="w-full px-4 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 bg-white text-slate-900 font-medium placeholder:text-slate-400"
+                            className="w-full px-4 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 bg-white !text-slate-900 font-medium placeholder:text-slate-400 [&:-webkit-autofill]:[-webkit-text-fill-color:#0f172a] [&:-webkit-autofill]:[transition:background-color_5000s_ease-in-out_0s]"
                             placeholder="Nhập username..."
                         />
                     </div>
@@ -70,7 +81,7 @@ export default function LoginPage() {
                             required
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            className="w-full px-4 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 bg-white text-slate-900 font-medium placeholder:text-slate-400"
+                            className="w-full px-4 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 bg-white !text-slate-900 font-medium placeholder:text-slate-400 [&:-webkit-autofill]:[-webkit-text-fill-color:#0f172a] [&:-webkit-autofill]:[transition:background-color_5000s_ease-in-out_0s]"
                             placeholder="Nhập password..."
                         />
                     </div>
@@ -83,6 +94,13 @@ export default function LoginPage() {
                         {loading ? 'Đang xác thực...' : 'Đăng Nhập'}
                     </button>
                 </form>
+
+                <p className="mt-4 text-center text-sm text-slate-600">
+                    Chưa có tài khoản?{' '}
+                    <Link href="/register" className="text-sky-600 font-semibold hover:underline">
+                        Đăng ký ngay
+                    </Link>
+                </p>
             </div>
         </div>
     );
