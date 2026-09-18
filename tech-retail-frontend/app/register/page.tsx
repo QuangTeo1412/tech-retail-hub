@@ -29,11 +29,12 @@ export default function RegisterPage() {
                     <div className="absolute inset-2 border border-gray-200/80 rounded-2xl pointer-events-none" />
 
                     {}
-                    <div className="absolute bottom-3 right-4 opacity-15 pointer-events-none select-none flex flex-col items-end">
-                        <div className="text-[10px] font-black tracking-widest text-slate-800">1412</div>
-                        <div className="w-12 h-12 border-2 border-slate-800 rounded-full flex items-center justify-center text-xs font-black">
-                            K.K
-                        </div>
+                    <div className="absolute bottom-4 right-5 pointer-events-none select-none flex flex-col items-end opacity-80">
+                        <img
+                            src="/kaito-kid-logo.png"
+                            alt="Kaito Kid Icon"
+                            className="w-14 h-auto object-contain"
+                        />
                     </div>
 
                     <div className="relative z-10">
@@ -147,7 +148,7 @@ export default function RegisterPage() {
                                     type="submit"
                                     className="w-full bg-slate-900 text-white font-black text-base py-4 rounded-xl shadow-lg hover:bg-blue-600 active:scale-95 transition-all duration-200 tracking-[0.2em] uppercase"
                                 >
-                                    ĐĂNG KÝ
+                                    ĐĂNG  KÝ
                                 </button>
                             </div>
                         </form>

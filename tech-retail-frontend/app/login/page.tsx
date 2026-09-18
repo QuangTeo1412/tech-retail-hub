@@ -11,6 +11,7 @@ export default function LoginPage() {
             {}
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.15)_0,transparent_70%)] pointer-events-none" />
 
+            {}
             <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
                 <Link href="/" className="flex justify-center mb-2">
                     <span className="text-3xl font-black text-white tracking-widest hover:scale-105 transition-transform drop-shadow-[0_2px_10px_rgba(59,130,246,0.5)]">
@@ -21,50 +22,43 @@ export default function LoginPage() {
 
             {}
             <div className="mt-4 sm:mx-auto sm:w-full sm:max-w-md px-4 relative z-10">
-                <div className="bg-white py-10 px-8 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7)] rounded-3xl border-4 border-gray-100 relative overflow-hidden transition-all duration-300">
-
-                    {}
-                    <div className="absolute inset-2 border border-gray-200/80 rounded-2xl pointer-events-none" />
-
-                    {}
-                    <div className="absolute bottom-3 right-4 opacity-15 pointer-events-none select-none flex flex-col items-end">
-                        <div className="text-[10px] font-black tracking-widest text-slate-800">1412</div>
-                        <div className="w-12 h-12 border-2 border-slate-800 rounded-full flex items-center justify-center text-xs font-black">
-                            K.K
-                        </div>
-                    </div>
-
+                <div
+                    className="py-10 px-8 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7)] rounded-3xl relative overflow-hidden bg-cover bg-center transition-all duration-300"
+                    style={{ backgroundImage: `url('/images/kaito-card-bg.jpg')` }}
+                >
                     <div className="relative z-10">
                         <h2 className="text-center text-2xl font-black text-gray-900 tracking-tight uppercase mb-1">
-                            Thư Thách Đấu
+                            Thẻ Đăng Nhập
                         </h2>
-                        <p className="text-center text-xs text-gray-400 mb-6 font-medium">
-                            Đăng nhập để giải mã kho báu công nghệ
+                        <p className="text-center text-xs text-gray-500 mb-6 font-semibold">
+                            Xác thực danh tính để truy cập hệ thống
                         </p>
 
                         <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+                            {}
                             <div>
-                                <label htmlFor="account" className="block text-[11px] font-black text-gray-600 uppercase tracking-wider mb-1">
-                                    Email / Số điện thoại
+                                <label htmlFor="email" className="block text-[11px] font-black text-gray-700 uppercase tracking-wider mb-1">
+                                    Địa chỉ Email / Tên đăng nhập
                                 </label>
                                 <input
-                                    id="account"
-                                    name="account"
-                                    type="text"
+                                    id="email"
+                                    name="email"
+                                    type="email"
                                     required
                                     placeholder="phantom@gmail.com"
-                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 px-4 text-sm focus:outline-none focus:border-blue-600 focus:bg-white focus:ring-4 focus:ring-blue-50/50 transition-all"
+                                    className="w-full bg-white/80 backdrop-blur-sm border border-gray-300 rounded-xl py-3 px-4 text-sm focus:outline-none focus:border-blue-600 focus:bg-white focus:ring-4 focus:ring-blue-50/50 transition-all"
                                 />
                             </div>
 
+                            {}
                             <div>
                                 <div className="flex items-center justify-between mb-1">
-                                    <label htmlFor="password" className="block text-[11px] font-black text-gray-600 uppercase tracking-wider">
+                                    <label htmlFor="password" className="block text-[11px] font-black text-gray-700 uppercase tracking-wider">
                                         Mật khẩu bí mật
                                     </label>
-                                    <a href="#" className="text-[11px] font-bold text-blue-600 hover:underline">
-                                        Quên?
-                                    </a>
+                                    <Link href="/forgot-password" className="text-[11px] font-bold text-blue-600 hover:underline">
+                                        Quên mật khẩu?
+                                    </Link>
                                 </div>
                                 <div className="relative">
                                     <input
@@ -73,12 +67,12 @@ export default function LoginPage() {
                                         type={showPassword ? 'text' : 'password'}
                                         required
                                         placeholder="••••••••"
-                                        className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 pl-4 pr-11 text-sm focus:outline-none focus:border-blue-600 focus:bg-white focus:ring-4 focus:ring-blue-50/50 transition-all"
+                                        className="w-full bg-white/80 backdrop-blur-sm border border-gray-300 rounded-xl py-3 pl-4 pr-11 text-sm focus:outline-none focus:border-blue-600 focus:bg-white focus:ring-4 focus:ring-blue-50/50 transition-all"
                                     />
                                     <button
                                         type="button"
                                         onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 p-1"
+                                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-800 p-1"
                                     >
                                         {showPassword ? (
                                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="w-5 h-5">
@@ -94,6 +88,20 @@ export default function LoginPage() {
                                 </div>
                             </div>
 
+                            {}
+                            <div className="flex items-center">
+                                <input
+                                    id="remember-me"
+                                    name="remember-me"
+                                    type="checkbox"
+                                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer"
+                                />
+                                <label htmlFor="remember-me" className="ml-2 block text-xs font-semibold text-gray-700 cursor-pointer">
+                                    Ghi nhớ mật thư này
+                                </label>
+                            </div>
+
+                            {}
                             <div className="pt-3">
                                 <button
                                     type="submit"
@@ -104,11 +112,12 @@ export default function LoginPage() {
                             </div>
                         </form>
 
-                        <div className="mt-6 border-t border-gray-100 pt-4 text-center">
-                            <p className="text-xs text-gray-500">
-                                Chưa có danh tính?{' '}
+                        {}
+                        <div className="mt-6 border-t border-gray-200/60 pt-4 text-center">
+                            <p className="text-xs text-gray-600 font-medium">
+                                Chưa có thẻ thành viên?{' '}
                                 <Link href="/register" className="font-extrabold text-blue-600 hover:underline">
-                                    Nhận thẻ đăng ký
+                                    Đăng ký ngay
                                 </Link>
                             </p>
                         </div>
