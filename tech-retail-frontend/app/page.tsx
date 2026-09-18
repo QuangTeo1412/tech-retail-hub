@@ -152,36 +152,6 @@ function Footer() {
                             <span className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold text-xs cursor-pointer hover:opacity-80">Zalo</span>
                         </div>
                     </div>
-
-                    <div>
-                        <h3 className="font-bold text-sm text-gray-900 mb-3">Website thành viên</h3>
-                        <div className="space-y-3">
-                            <div>
-                                <p className="text-[11px] text-gray-500 mb-1">Hệ thống bảo hành và chăm sóc Điện thoại - Máy tính</p>
-                                <span className="inline-block bg-red-600 text-white font-black px-2.5 py-1 rounded text-xs uppercase tracking-wider">
-                                    dienthoaivui
-                                </span>
-                            </div>
-                            <div>
-                                <p className="text-[11px] text-gray-500 mb-1">Trung tâm bảo hành uỷ quyền Apple</p>
-                                <span className="inline-block bg-slate-900 text-white font-bold px-2 py-1 rounded text-xs">
-                                    care <span className="bg-red-600 text-white px-1 rounded text-[10px]">S</span>
-                                </span>
-                            </div>
-                            <div>
-                                <p className="text-[11px] text-gray-500 mb-1">Kênh thông tin giải trí công nghệ cho giới trẻ</p>
-                                <span className="inline-block bg-red-500 text-white font-bold px-2 py-0.5 rounded text-xs">
-                                    SChannel
-                                </span>
-                            </div>
-                            <div>
-                                <p className="text-[11px] text-gray-500 mb-1">Trang thông tin công nghệ mới nhất</p>
-                                <span className="inline-block bg-red-600 text-white font-bold px-2 py-0.5 rounded text-xs">
-                                    Sforum.vn
-                                </span>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
         </footer>
