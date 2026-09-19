@@ -11,10 +11,22 @@ const beVietnam = Be_Vietnam_Pro({
     display: 'swap',
 });
 
-const INPUT_CLASS =
-    'w-full bg-white border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm';
+const MIN_PASSWORD_LENGTH = 8; // chỉnh cho khớp với rule của backend
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_REGEX = /^(0|\+84)\d{9}$/;
+
+const INPUT_BASE =
+    'w-full bg-white border rounded-xl px-4 py-3.5 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 transition-all shadow-sm';
+const INPUT_OK = 'border-slate-200 focus:border-blue-500 focus:ring-blue-500/20';
+const INPUT_ERROR = 'border-red-500 focus:border-red-500 focus:ring-red-500/20';
 
 const LABEL_CLASS = 'block text-xs font-bold text-slate-800 tracking-wider uppercase mb-2';
+
+type FieldName = 'email' | 'phone' | 'password' | 'confirmPassword';
+type FieldErrors = Partial<Record<FieldName, string>>;
+
+// Thứ tự hiển thị trên form, dùng để focus vào ô lỗi đầu tiên
+const FIELD_ORDER: FieldName[] = ['email', 'phone', 'password', 'confirmPassword'];
 
 function EyeIcon() {
     return (
@@ -57,16 +69,61 @@ function EyeSlashIcon() {
     );
 }
 
+function FieldError({ id, message }: { id: string; message?: string }) {
+    if (!message) return null;
+    return (
+        <p id={`${id}-error`} className="mt-1.5 text-xs font-bold text-red-600">
+            {message}
+        </p>
+    );
+}
+
+interface TextFieldProps {
+    id: FieldName;
+    label: string;
+    type: 'email' | 'tel';
+    value: string;
+    onChange: (value: string) => void;
+    error?: string;
+    placeholder: string;
+    autoComplete: string;
+}
+
+function TextField({ id, label, type, value, onChange, error, placeholder, autoComplete }: TextFieldProps) {
+    return (
+        <div>
+            <label htmlFor={id} className={LABEL_CLASS}>
+                {label}
+            </label>
+            <input
+                id={id}
+                name={id}
+                type={type}
+                inputMode={type === 'tel' ? 'tel' : undefined}
+                autoComplete={autoComplete}
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                placeholder={placeholder}
+                aria-invalid={!!error}
+                aria-describedby={error ? `${id}-error` : undefined}
+                className={`${INPUT_BASE} ${error ? INPUT_ERROR : INPUT_OK}`}
+            />
+            <FieldError id={id} message={error} />
+        </div>
+    );
+}
+
 interface PasswordFieldProps {
-    id: string;
+    id: FieldName;
     label: string;
     value: string;
     onChange: (value: string) => void;
     show: boolean;
     onToggle: () => void;
+    error?: string;
 }
 
-function PasswordField({ id, label, value, onChange, show, onToggle }: PasswordFieldProps) {
+function PasswordField({ id, label, value, onChange, show, onToggle, error }: PasswordFieldProps) {
     return (
         <div>
             <label htmlFor={id} className={LABEL_CLASS}>
@@ -77,12 +134,13 @@ function PasswordField({ id, label, value, onChange, show, onToggle }: PasswordF
                     id={id}
                     name={id}
                     type={show ? 'text' : 'password'}
-                    required
                     autoComplete="new-password"
                     value={value}
                     onChange={(e) => onChange(e.target.value)}
                     placeholder="••••••••"
-                    className={`${INPUT_CLASS} pr-12`}
+                    aria-invalid={!!error}
+                    aria-describedby={error ? `${id}-error` : undefined}
+                    className={`${INPUT_BASE} pr-12 ${error ? INPUT_ERROR : INPUT_OK}`}
                 />
                 <button
                     type="button"
@@ -94,27 +152,62 @@ function PasswordField({ id, label, value, onChange, show, onToggle }: PasswordF
                     {show ? <EyeSlashIcon /> : <EyeIcon />}
                 </button>
             </div>
+            <FieldError id={id} message={error} />
         </div>
     );
 }
 
+function validate(values: Record<FieldName, string>): FieldErrors {
+    const errors: FieldErrors = {};
+    const email = values.email.trim();
+    const phone = values.phone.replace(/[\s.-]/g, '');
+
+    if (!email) errors.email = 'Vui lòng nhập email.';
+    else if (!EMAIL_REGEX.test(email)) errors.email = 'Email không hợp lệ.';
+
+    if (!phone) errors.phone = 'Vui lòng nhập số điện thoại.';
+    else if (!PHONE_REGEX.test(phone)) errors.phone = 'Số điện thoại không hợp lệ.';
+
+    if (!values.password) errors.password = 'Vui lòng nhập mật khẩu.';
+    else if (values.password.length < MIN_PASSWORD_LENGTH)
+        errors.password = `Mật khẩu phải có ít nhất ${MIN_PASSWORD_LENGTH} ký tự.`;
+
+    if (!values.confirmPassword) errors.confirmPassword = 'Vui lòng xác nhận mật khẩu.';
+    else if (values.password !== values.confirmPassword) errors.confirmPassword = 'Mật khẩu xác nhận không khớp.';
+
+    return errors;
+}
+
 export default function RegisterPage() {
     const router = useRouter();
-    const [email, setEmail] = useState('');
-    const [phone, setPhone] = useState('');
-    const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
+    const [values, setValues] = useState<Record<FieldName, string>>({
+        email: '',
+        phone: '',
+        password: '',
+        confirmPassword: '',
+    });
+    const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
+    // Cập nhật giá trị và xoá lỗi của đúng ô đang gõ
+    const setField = (name: FieldName) => (value: string) => {
+        setValues((prev) => ({ ...prev, [name]: value }));
+        setFieldErrors((prev) => (prev[name] ? { ...prev, [name]: undefined } : prev));
+    };
+
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
 
-        if (password !== confirmPassword) {
-            setError('Mật khẩu xác nhận không khớp!');
+        const errors = validate(values);
+        setFieldErrors(errors);
+
+        const firstInvalid = FIELD_ORDER.find((name) => errors[name]);
+        if (firstInvalid) {
+            document.getElementById(firstInvalid)?.focus();
             return;
         }
 
@@ -124,7 +217,11 @@ export default function RegisterPage() {
             const res = await fetch('http://localhost:8080/api/auth/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, phone, password }),
+                body: JSON.stringify({
+                    email: values.email.trim(),
+                    phone: values.phone.replace(/[\s.-]/g, ''),
+                    password: values.password,
+                }),
             });
 
             if (!res.ok) {
@@ -158,6 +255,7 @@ export default function RegisterPage() {
                     </p>
                 </header>
 
+                {/* Lỗi từ server (sai thông tin, email đã tồn tại, mất kết nối...) */}
                 {error && (
                     <div
                         role="alert"
@@ -167,62 +265,48 @@ export default function RegisterPage() {
                     </div>
                 )}
 
-                <form onSubmit={handleRegister} className="space-y-5">
-                    {/* ĐỊA CHỈ EMAIL */}
-                    <div>
-                        <label htmlFor="email" className={LABEL_CLASS}>
-                            Địa chỉ email
-                        </label>
-                        <input
-                            id="email"
-                            name="email"
-                            type="email"
-                            required
-                            autoComplete="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            placeholder="phantom@gmail.com"
-                            className={INPUT_CLASS}
-                        />
-                    </div>
+                {/* noValidate: tắt tooltip mặc định của trình duyệt, dùng lỗi tự hiển thị bên dưới từng ô */}
+                <form onSubmit={handleRegister} noValidate className="space-y-5">
+                    <TextField
+                        id="email"
+                        label="Địa chỉ email"
+                        type="email"
+                        autoComplete="email"
+                        placeholder="phantom@gmail.com"
+                        value={values.email}
+                        onChange={setField('email')}
+                        error={fieldErrors.email}
+                    />
 
-                    {/* SỐ ĐIỆN THOẠI */}
-                    <div>
-                        <label htmlFor="phone" className={LABEL_CLASS}>
-                            Số điện thoại
-                        </label>
-                        <input
-                            id="phone"
-                            name="phone"
-                            type="tel"
-                            inputMode="tel"
-                            required
-                            autoComplete="tel"
-                            value={phone}
-                            onChange={(e) => setPhone(e.target.value)}
-                            placeholder="0886288288"
-                            className={INPUT_CLASS}
-                        />
-                    </div>
+                    <TextField
+                        id="phone"
+                        label="Số điện thoại"
+                        type="tel"
+                        autoComplete="tel"
+                        placeholder="0886288288"
+                        value={values.phone}
+                        onChange={setField('phone')}
+                        error={fieldErrors.phone}
+                    />
 
-                    {/* MẬT KHẨU */}
                     <PasswordField
                         id="password"
                         label="Mật khẩu bí mật"
-                        value={password}
-                        onChange={setPassword}
+                        value={values.password}
+                        onChange={setField('password')}
                         show={showPassword}
                         onToggle={() => setShowPassword((v) => !v)}
+                        error={fieldErrors.password}
                     />
 
-                    {/* XÁC NHẬN MẬT KHẨU */}
                     <PasswordField
-                        id="confirm-password"
+                        id="confirmPassword"
                         label="Xác nhận mật khẩu"
-                        value={confirmPassword}
-                        onChange={setConfirmPassword}
+                        value={values.confirmPassword}
+                        onChange={setField('confirmPassword')}
                         show={showConfirmPassword}
                         onToggle={() => setShowConfirmPassword((v) => !v)}
+                        error={fieldErrors.confirmPassword}
                     />
 
                     <button

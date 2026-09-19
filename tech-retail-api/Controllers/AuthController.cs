@@ -1,6 +1,10 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using ProductManagementAPI.Models;
 
 namespace ProductManagementAPI.Controllers
@@ -11,10 +15,12 @@ namespace ProductManagementAPI.Controllers
     public class AuthController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly IConfiguration _configuration;
 
-        public AuthController(AppDbContext context)
+        public AuthController(AppDbContext context, IConfiguration configuration)
         {
             _context = context;
+            _configuration = configuration;
         }
 
         [HttpPost("login")]
@@ -55,9 +61,11 @@ namespace ProductManagementAPI.Controllers
                 return BadRequest(new { message = "Tài khoản hoặc mật khẩu không chính xác!" });
             }
 
+            var jwtToken = GenerateJwtToken(user);
+
             return Ok(new
             {
-                token = "mock-jwt-token-123456",
+                token = jwtToken,
                 user = new
                 {
                     username = user.Username,
@@ -67,6 +75,35 @@ namespace ProductManagementAPI.Controllers
                     role = user.Role
                 }
             });
+        }
+
+        private string GenerateJwtToken(User user)
+        {
+            var secretKey = _configuration["JwtSettings:SecretKey"] ?? "DefaultFallbackSecretKeyMustBeLongEnough12345!";
+            var issuer = _configuration["JwtSettings:Issuer"] ?? "ProductManagementAPI";
+            var audience = _configuration["JwtSettings:Audience"] ?? "ProductManagementClient";
+            var expireMinutes = double.TryParse(_configuration["JwtSettings:ExpireMinutes"], out var mins) ? mins : 60;
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            var claims = new[]
+            {
+                new Claim(JwtRegisteredClaimNames.Sub, user.Username ?? user.Email ?? "user"),
+                new Claim(ClaimTypes.Name, user.Username ?? string.Empty),
+                new Claim(ClaimTypes.Email, user.Email ?? string.Empty),
+                new Claim(ClaimTypes.Role, user.Role ?? "User")
+            };
+
+            var token = new JwtSecurityToken(
+                issuer: issuer,
+                audience: audience,
+                claims: claims,
+                expires: DateTime.UtcNow.AddMinutes(expireMinutes),
+                signingCredentials: creds
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
         [HttpPost("register")]
@@ -103,7 +140,6 @@ namespace ProductManagementAPI.Controllers
             }
 
             string username = await GenerateUniqueUsernameAsync(email);
-
             string passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
 
             var newUser = new User
@@ -112,7 +148,7 @@ namespace ProductManagementAPI.Controllers
                 PhoneNumber = phone,
                 PasswordHash = passwordHash,
                 Username = username,
-                FullName = string.Empty, 
+                FullName = string.Empty,
                 Role = "User"
             };
 
