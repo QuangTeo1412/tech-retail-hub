@@ -2,8 +2,20 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 
-const FEATURED_LAPTOPS = [
+interface Laptop {
+    id: number;
+    name: string;
+    price: string;
+    oldPrice: string;
+    discount: string;
+    badge: string;
+    image: string;
+}
+
+const FEATURED_LAPTOPS: Laptop[] = [
     { id: 1, name: 'Laptop Lenovo Legion 5 2025 - AMD R7 7735HS, RTX 4060 8GB', price: '28.990.000đ', oldPrice: '32.990.000đ', discount: '-12%', badge: 'BÁN CHẠY', image: 'https://images.unsplash.com/photo-1603302576837-37561b2e2302?q=80&w=600' },
     { id: 2, name: 'Laptop ASUS ROG Strix G16 - i7 13700HX, RTX 4050 6GB', price: '31.490.000đ', oldPrice: '34.990.000đ', discount: '-10%', badge: 'HOT SALE', image: 'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?q=80&w=600' },
     { id: 3, name: 'Laptop Lenovo LOQ 15 Gaming - i5 12450HX, RTX 3050', price: '18.490.000đ', oldPrice: '20.990.000đ', discount: '-11%', badge: 'GIÁ TỐT', image: 'https://images.unsplash.com/photo-1593642632823-8f785ba67e45?q=80&w=600' },
@@ -24,17 +36,17 @@ function Footer() {
                     <div>
                         <h3 className="font-bold text-sm text-gray-900 mb-2">Tổng đài hỗ trợ miễn phí</h3>
                         <p className="mb-1">
-                            Mua hàng - bảo hành <span className="font-bold text-gray-900">1800.2097</span> (7h30 - 22h00)
+                            Mua hàng - bảo hành <a href="tel:18002097" className="font-bold text-gray-900 hover:text-blue-600">1800.2097</a> (7h30 - 22h00)
                         </p>
                         <p>
-                            Khiếu nại <span className="font-bold text-gray-900">1800.2063</span> (8h00 - 21h30)
+                            Khiếu nại <a href="tel:18002063" className="font-bold text-gray-900 hover:text-blue-600">1800.2063</a> (8h00 - 21h30)
                         </p>
                     </div>
 
                     <div>
                         <h3 className="font-bold text-sm text-gray-900 mb-2">Phương thức thanh toán</h3>
                         <div className="flex flex-wrap gap-2">
-                            <span className="px-2 py-1 border border-gray-200 rounded font-semibold text-[10px]">🍎Pay</span>
+                            <span className="px-2 py-1 border border-gray-200 rounded font-semibold text-[10px]">🍎 Pay</span>
                             <span className="px-2 py-1 border border-gray-200 rounded font-bold text-blue-600 text-[10px]">VNPAY</span>
                             <span className="px-2 py-1 border border-gray-200 rounded font-bold text-pink-600 text-[10px]">momo</span>
                             <span className="px-2 py-1 border border-gray-200 rounded font-bold text-blue-500 text-[10px]">OnePAY</span>
@@ -55,16 +67,18 @@ function Footer() {
 
                         <form onSubmit={(e) => e.preventDefault()} className="space-y-2">
                             <div>
-                                <label className="block text-gray-600 font-medium mb-1">Email</label>
+                                <label htmlFor="email-input" className="block text-gray-600 font-medium mb-1">Email</label>
                                 <input
+                                    id="email-input"
                                     type="email"
                                     placeholder="Nhập email của bạn"
                                     className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500"
                                 />
                             </div>
                             <div>
-                                <label className="block text-gray-600 font-medium mb-1">Số điện thoại</label>
+                                <label htmlFor="phone-input" className="block text-gray-600 font-medium mb-1">Số điện thoại</label>
                                 <input
+                                    id="phone-input"
                                     type="tel"
                                     placeholder="Nhập số điện thoại của bạn"
                                     className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500"
@@ -130,10 +144,10 @@ function Footer() {
                             </div>
 
                             <div className="flex flex-col gap-2">
-                                <button className="bg-black text-white px-3 py-1.5 rounded-lg text-[10px] font-bold flex items-center gap-1.5 hover:bg-gray-800">
+                                <button type="button" className="bg-black text-white px-3 py-1.5 rounded-lg text-[10px] font-bold flex items-center gap-1.5 hover:bg-gray-800 transition-colors">
                                     <span>▶</span> Google Play
                                 </button>
-                                <button className="bg-black text-white px-3 py-1.5 rounded-lg text-[10px] font-bold flex items-center gap-1.5 hover:bg-gray-800">
+                                <button type="button" className="bg-black text-white px-3 py-1.5 rounded-lg text-[10px] font-bold flex items-center gap-1.5 hover:bg-gray-800 transition-colors">
                                     <span>🍎</span> App Store
                                 </button>
                             </div>
@@ -145,11 +159,11 @@ function Footer() {
                     <div>
                         <h3 className="font-bold text-sm text-gray-900 mb-3">Kết nối với KaitoStore</h3>
                         <div className="flex items-center gap-2">
-                            <span className="w-8 h-8 rounded-full bg-red-600 text-white flex items-center justify-center font-bold text-xs cursor-pointer hover:opacity-80">▶</span>
-                            <span className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs cursor-pointer hover:opacity-80">f</span>
-                            <span className="w-8 h-8 rounded-full bg-pink-600 text-white flex items-center justify-center font-bold text-xs cursor-pointer hover:opacity-80">📷</span>
-                            <span className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center font-bold text-xs cursor-pointer hover:opacity-80">🎵</span>
-                            <span className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold text-xs cursor-pointer hover:opacity-80">Zalo</span>
+                            <button type="button" aria-label="Youtube" className="w-8 h-8 rounded-full bg-red-600 text-white flex items-center justify-center font-bold text-xs hover:opacity-80 transition-opacity">▶</button>
+                            <button type="button" aria-label="Facebook" className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs hover:opacity-80 transition-opacity">f</button>
+                            <button type="button" aria-label="Instagram" className="w-8 h-8 rounded-full bg-pink-600 text-white flex items-center justify-center font-bold text-xs hover:opacity-80 transition-opacity">📷</button>
+                            <button type="button" aria-label="TikTok" className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center font-bold text-xs hover:opacity-80 transition-opacity">🎵</button>
+                            <button type="button" aria-label="Zalo" className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold text-xs hover:opacity-80 transition-opacity">Zalo</button>
                         </div>
                     </div>
                 </div>
@@ -159,31 +173,36 @@ function Footer() {
 }
 
 export default function HomePage() {
-    const [cartCount] = useState(2);
+    const router = useRouter();
+    const [cartCount, setCartCount] = useState<number>(2);
     const scrollRef = useRef<HTMLDivElement>(null);
-    const [isHovered, setIsHovered] = useState(false);
+    const [isHovered, setIsHovered] = useState<boolean>(false);
+    const [searchQuery, setSearchQuery] = useState<string>('');
 
-    const [user, setUser] = useState<{ username?: string; role?: string } | null>(null);
-
-    useEffect(() => {
-        const storedUser = localStorage.getItem('user');
-        const token = localStorage.getItem('token');
-
-        if (token && storedUser) {
-            try {
-                const parsedUser = JSON.parse(storedUser);
-                queueMicrotask(() => setUser(parsedUser));
-            } catch {
-                queueMicrotask(() => setUser(null));
+    const [user, setUser] = useState<{ username?: string; role?: string } | null>(() => {
+        if (typeof window !== 'undefined') {
+            const storedUser = localStorage.getItem('user');
+            const token = localStorage.getItem('token');
+            if (token && storedUser) {
+                try {
+                    return JSON.parse(storedUser);
+                } catch {
+                    return null;
+                }
             }
         }
-    }, []);
+        return null;
+    });
 
     const handleLogout = () => {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         setUser(null);
-        window.location.reload();
+        router.refresh();
+    };
+
+    const handleAddToCart = (_laptop: Laptop) => {
+        setCartCount((prev) => prev + 1);
     };
 
     useEffect(() => {
@@ -198,7 +217,7 @@ export default function HomePage() {
                     scrollRef.current.scrollBy({ left: cardWidth, behavior: 'smooth' });
                 }
             }
-        }, 10000);
+        }, 8000);
         return () => clearInterval(interval);
     }, [isHovered]);
 
@@ -213,14 +232,16 @@ export default function HomePage() {
                     <div className="flex-1 max-w-2xl relative">
                         <input
                             type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
                             placeholder="Bạn cần tìm laptop, linh kiện gì hôm nay?..."
                             className="w-full bg-gray-100/80 border border-gray-200 rounded-full py-2.5 pl-5 pr-10 text-sm focus:outline-none focus:bg-white focus:border-blue-500 transition-all placeholder:text-gray-400"
                         />
-                        <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-base opacity-60">🔍</span>
+                        <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-base opacity-60 pointer-events-none">🔍</span>
                     </div>
 
                     <div className="flex items-center gap-5 flex-shrink-0">
-                        <Link href="/cart" className="relative p-2 text-gray-700 hover:text-blue-600 transition-colors">
+                        <Link href="/cart" aria-label="Giỏ hàng" className="relative p-2 text-gray-700 hover:text-blue-600 transition-colors">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.25 10.5a.75.75 0 100-1.5.75.75 0 000 1.5zm7.5 0a.75.75 0 100-1.5.75.75 0 000 1.5z" />
                             </svg>
@@ -231,24 +252,25 @@ export default function HomePage() {
                             )}
                         </Link>
 
-                        {/* KIỂM TRA TRẠNG THÁI ĐĂNG NHẬP */}
+                        {/* HIỂN THỊ AVATAR HOẶC NÚT ĐĂNG NHẬP */}
                         {user ? (
-                            <div className="flex items-center gap-3 bg-gray-50 border border-gray-200 px-3 py-1.5 rounded-full">
-                                <div className="w-7 h-7 rounded-full bg-blue-600 text-white font-bold text-xs flex items-center justify-center uppercase shadow-sm">
+                            <div className="flex items-center gap-3 bg-gray-50 border border-gray-200 px-3 py-1.5 rounded-full shadow-sm hover:border-gray-300 transition-all">
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-500 text-white font-extrabold text-sm flex items-center justify-center uppercase shadow-sm">
                                     {user.username ? user.username[0] : 'U'}
                                 </div>
-                                <span className="text-xs font-bold text-gray-800">
+                                <span className="text-xs font-bold text-gray-800 max-w-[100px] truncate">
                                     {user.username}
                                 </span>
                                 <button
+                                    type="button"
                                     onClick={handleLogout}
-                                    className="text-[11px] text-red-500 hover:text-red-700 font-bold ml-1 pl-2 border-l border-gray-200"
+                                    className="text-[11px] text-red-500 hover:text-red-700 font-bold ml-1 pl-2 border-l border-gray-200 transition-colors"
                                 >
                                     Đăng xuất
                                 </button>
                             </div>
                         ) : (
-                            <>
+                            <div className="flex items-center gap-3">
                                 <Link href="/login" className="text-sm font-bold text-gray-800 hover:text-blue-600 transition-colors">
                                     Đăng nhập
                                 </Link>
@@ -256,19 +278,19 @@ export default function HomePage() {
                                 <Link href="/register" className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-5 py-2 rounded-xl transition-all shadow-sm">
                                     Đăng ký
                                 </Link>
-                            </>
+                            </div>
                         )}
                     </div>
                 </div>
 
                 <div className="bg-[#111827] text-white text-xs font-bold py-3">
-                    <div className="max-w-7xl mx-auto px-4 flex items-center gap-8 overflow-x-auto whitespace-nowrap">
-                        <span className="cursor-pointer hover:text-blue-400 flex items-center gap-2">💻 Laptop Mới</span>
-                        <span className="cursor-pointer hover:text-blue-400 flex items-center gap-2">🖥️ Laptop Cũ</span>
-                        <span className="cursor-pointer hover:text-blue-400 flex items-center gap-2">🔌 Linh Kiện Laptop</span>
-                        <span className="cursor-pointer hover:text-blue-400 flex items-center gap-2">🎧 Đồ Công Nghệ</span>
-                        <span className="cursor-pointer hover:text-blue-400 flex items-center gap-2">🛡️ Tra Cứu Bảo Hành</span>
-                        <span className="cursor-pointer hover:text-blue-400 flex items-center gap-2">💳 Trả Góp 0%</span>
+                    <div className="max-w-7xl mx-auto px-4 flex items-center gap-8 overflow-x-auto whitespace-nowrap no-scrollbar">
+                        <Link href="/laptop-moi" className="hover:text-blue-400 flex items-center gap-2">💻 Laptop Mới</Link>
+                        <Link href="/laptop-cu" className="hover:text-blue-400 flex items-center gap-2">🖥️ Laptop Cũ</Link>
+                        <Link href="/linh-kien" className="hover:text-blue-400 flex items-center gap-2">🔌 Linh Kiện Laptop</Link>
+                        <Link href="/phu-kien" className="hover:text-blue-400 flex items-center gap-2">🎧 Đồ Công Nghệ</Link>
+                        <Link href="/tra-cuu-bao-hanh" className="hover:text-blue-400 flex items-center gap-2">🛡️ Tra Cứu Bảo Hành</Link>
+                        <Link href="/tra-gop" className="hover:text-blue-400 flex items-center gap-2">💳 Trả Góp 0%</Link>
                     </div>
                 </div>
             </header>
@@ -276,10 +298,13 @@ export default function HomePage() {
             <section className="max-w-7xl mx-auto px-4 py-6">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-stretch">
                     <div className="lg:col-span-2 relative rounded-2xl overflow-hidden min-h-[320px] bg-slate-950 text-white p-8 flex flex-col justify-between shadow-sm">
-                        <img
+                        <Image
                             src="https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1200"
                             alt="Promo Banner"
-                            className="absolute inset-0 w-full h-full object-cover opacity-50"
+                            fill
+                            priority
+                            sizes="(max-width: 1024px) 100vw, 66vw"
+                            className="object-cover opacity-50 -z-0"
                         />
                         <div className="relative z-10 max-w-lg">
                             <span className="bg-red-600 text-white text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wider inline-flex items-center gap-1">
@@ -293,7 +318,7 @@ export default function HomePage() {
                             </p>
                         </div>
                         <div className="relative z-10 pt-6">
-                            <button className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-3 rounded-xl transition-all text-xs uppercase tracking-wider shadow-md">
+                            <button type="button" className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-3 rounded-xl transition-all text-xs uppercase tracking-wider shadow-md">
                                 Khám Phá Ngay
                             </button>
                         </div>
@@ -301,12 +326,14 @@ export default function HomePage() {
 
                     <div className="flex flex-col gap-4">
                         <div className="flex-1 relative rounded-2xl overflow-hidden p-6 text-white flex flex-col justify-between min-h-[155px] shadow-sm">
-                            <img
+                            <Image
                                 src="https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=600"
-                                alt="Service"
-                                className="absolute inset-0 w-full h-full object-cover"
+                                alt="Service Banner"
+                                fill
+                                sizes="(max-width: 1024px) 100vw, 33vw"
+                                className="object-cover -z-0"
                             />
-                            <div className="absolute inset-0 bg-gradient-to-r from-red-600/90 to-red-700/80" />
+                            <div className="absolute inset-0 bg-gradient-to-r from-red-600/90 to-red-700/80 -z-0" />
                             <div className="relative z-10">
                                 <span className="bg-white/20 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase">
                                     DỊCH VỤ
@@ -314,18 +341,20 @@ export default function HomePage() {
                                 <h3 className="text-xl font-extrabold mt-2 uppercase tracking-wide">BẢO HÀNH ĐIỆN TỬ</h3>
                                 <p className="text-xs opacity-90 font-medium mt-1">Nhanh chóng - Tiện lợi - Uy tín 100%</p>
                             </div>
-                            <span className="relative z-10 text-xs font-bold flex items-center gap-1 mt-2">
+                            <span className="relative z-10 text-xs font-bold flex items-center gap-1 mt-2 cursor-pointer hover:underline">
                                 Xem chi tiết ➔
                             </span>
                         </div>
 
                         <div className="flex-1 relative rounded-2xl overflow-hidden p-6 text-white flex flex-col justify-between min-h-[155px] shadow-sm">
-                            <img
+                            <Image
                                 src="https://images.unsplash.com/photo-1511512578047-dfb367046420?q=80&w=600"
-                                alt="Customer Loyalty"
-                                className="absolute inset-0 w-full h-full object-cover"
+                                alt="Customer Loyalty Banner"
+                                fill
+                                sizes="(max-width: 1024px) 100vw, 33vw"
+                                className="object-cover -z-0"
                             />
-                            <div className="absolute inset-0 bg-gradient-to-r from-slate-900/95 to-blue-950/90" />
+                            <div className="absolute inset-0 bg-gradient-to-r from-slate-900/95 to-blue-950/90 -z-0" />
                             <div className="relative z-10">
                                 <span className="bg-white/10 text-blue-300 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase">
                                     TRI ÂN KHÁCH HÀNG
@@ -333,7 +362,7 @@ export default function HomePage() {
                                 <h3 className="text-xl font-extrabold mt-2 uppercase tracking-wide">TẶNG TỚI 1 TRIỆU</h3>
                                 <p className="text-xs opacity-80 font-medium mt-1">Dành riêng cho khách hàng cũ mua lại</p>
                             </div>
-                            <span className="relative z-10 text-xs font-bold flex items-center gap-1 mt-2 text-blue-400">
+                            <span className="relative z-10 text-xs font-bold flex items-center gap-1 mt-2 text-blue-400 cursor-pointer hover:underline">
                                 Nhận ưu đãi ngay ➔
                             </span>
                         </div>
@@ -353,7 +382,6 @@ export default function HomePage() {
                     onMouseEnter={() => setIsHovered(true)}
                     onMouseLeave={() => setIsHovered(false)}
                     className="flex gap-4 overflow-x-auto scroll-smooth pb-4 no-scrollbar"
-                    style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                 >
                     {FEATURED_LAPTOPS.map((item) => (
                         <div
@@ -365,10 +393,12 @@ export default function HomePage() {
                                     <span className="absolute top-2 left-2 z-10 bg-red-600 text-white text-[9px] font-bold px-2 py-0.5 rounded uppercase">
                                         {item.badge}
                                     </span>
-                                    <img
+                                    <Image
                                         src={item.image}
                                         alt={item.name}
-                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                        fill
+                                        sizes="280px"
+                                        className="object-cover group-hover:scale-105 transition-transform duration-500"
                                     />
                                 </div>
 
@@ -392,7 +422,11 @@ export default function HomePage() {
                                     </span>
                                 </div>
 
-                                <button className="w-full bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white font-bold text-xs py-2.5 rounded-xl transition-all">
+                                <button
+                                    type="button"
+                                    onClick={() => handleAddToCart(item)}
+                                    className="w-full bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white font-bold text-xs py-2.5 rounded-xl transition-all"
+                                >
                                     Thêm vào giỏ hàng
                                 </button>
                             </div>
