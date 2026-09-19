@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -24,17 +24,66 @@ interface User {
     image?: string;
 }
 
+interface HeroSlide {
+    id: number;
+    tag: string;
+    title: string;
+    description: string;
+    cta: string;
+    href: string;
+    image: string;
+}
+
+// Ẩn thanh cuộn nhưng vẫn cuộn được (không cần khai báo thêm CSS)
+const NO_SCROLLBAR = '[scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden';
+
+const HERO_INTERVAL = 6000; // ms giữa 2 lần tự chuyển banner
+const PRODUCT_AUTOPLAY_INTERVAL = 6000; // ms giữa 2 lần tự cuộn danh sách sản phẩm
+const CARD_WIDTH = 280; // phải khớp với w-[280px] của thẻ sản phẩm
+const CARD_GAP = 16; // phải khớp với gap-4
+
+// Ảnh banner nên rộng 1920px trở lên. Có thể thay bằng ảnh riêng: '/images/banners/ten-anh.webp' (đặt trong public/)
+const HERO_SLIDES: HeroSlide[] = [
+    {
+        id: 1,
+        tag: '🔥 HOT PROMO',
+        title: 'ĐẠI LỄ THẢ GA - SẮN SALE CỰC ĐÃ',
+        description: 'Giảm ngay 2.000.000đ trực tiếp vào hóa đơn khi mua Laptop RTX 40 Series.',
+        cta: 'Khám Phá Ngay',
+        href: '/laptop-moi',
+        image: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=85&w=1920&auto=format',
+    },
+    {
+        id: 2,
+        tag: '💻 LAPTOP MỚI',
+        title: 'LAPTOP CAO CẤP - MỎNG NHẸ, MẠNH MẼ',
+        description: 'Hàng chính hãng, bảo hành đầy đủ, 1 đổi 1 trong 30 ngày đầu.',
+        cta: 'Xem Laptop Mới',
+        href: '/laptop-moi',
+        image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?q=85&w=1920&auto=format',
+    },
+    {
+        id: 3,
+        tag: '💳 TRẢ GÓP 0%',
+        title: 'MUA LAPTOP TRẢ GÓP 0% LÃI SUẤT',
+        description: 'Thủ tục nhanh gọn, duyệt trong 5 phút. Sở hữu laptop mơ ước ngay hôm nay.',
+        cta: 'Xem Trả Góp',
+        href: '/tra-gop',
+        image: 'https://images.unsplash.com/photo-1541807084-5c52b6b3adef?q=85&w=1920&auto=format',
+    },
+];
+
 const FEATURED_LAPTOPS: Laptop[] = [
-    { id: 1, name: 'Laptop Lenovo Legion 5 2025 - AMD R7 7735HS, RTX 4060 8GB', price: '28.990.000đ', oldPrice: '32.990.000đ', discount: '-12%', badge: 'BÁN CHẠY', image: 'https://images.unsplash.com/photo-1603302576837-37561b2e2302?q=80&w=600' },
-    { id: 2, name: 'Laptop ASUS ROG Strix G16 - i7 13700HX, RTX 4050 6GB', price: '31.490.000đ', oldPrice: '34.990.000đ', discount: '-10%', badge: 'HOT SALE', image: 'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?q=80&w=600' },
-    { id: 3, name: 'Laptop Lenovo LOQ 15 Gaming - i5 12450HX, RTX 3050', price: '18.490.000đ', oldPrice: '20.990.000đ', discount: '-11%', badge: 'GIÁ TỐT', image: 'https://images.unsplash.com/photo-1593642632823-8f785ba67e45?q=80&w=600' },
-    { id: 4, name: 'Laptop Apple MacBook Pro 14" M3 - 8-Core CPU, 10-Core GPU', price: '39.990.000đ', oldPrice: '42.990.000đ', discount: '-7%', badge: 'CAO CẤP', image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?q=80&w=600' },
-    { id: 5, name: 'Laptop Acer Predator Helios Neo 16 - i7 13700HX, RTX 4060', price: '35.990.000đ', oldPrice: '39.990.000đ', discount: '-10%', badge: 'GAMING', image: 'https://images.unsplash.com/photo-1541807084-5c52b6b3adef?q=80&w=600' },
-    { id: 6, name: 'Laptop Dell XPS 13 Plus 9320 - i7 1360P, 16GB RAM, OLED', price: '41.990.000đ', oldPrice: '45.990.000đ', discount: '-8%', badge: 'SANG TRỌNG', image: 'https://images.unsplash.com/photo-1525547719571-a2d4ac8945e2?q=80&w=600' },
-    { id: 7, name: 'Laptop HP Victus 16 - Ryzen 5 7640HS, RTX 4050 6GB', price: '21.990.000đ', oldPrice: '24.990.000đ', discount: '-12%', badge: 'GIÁ TỐT', image: 'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?q=80&w=600' },
-    { id: 8, name: 'Laptop MSI Cyborg 15 - i5 12450H, RTX 4050 6GB', price: '19.990.000đ', oldPrice: '22.490.000đ', discount: '-11%', badge: 'HOT SALE', image: 'https://images.unsplash.com/photo-1603302576837-37561b2e2302?q=80&w=600' },
-    { id: 9, name: 'Laptop Gigabyte G5 GE - i5 12500H, RTX 3050 4GB', price: '16.990.000đ', oldPrice: '18.990.000đ', discount: '-10%', badge: 'GIÁ RẺ', image: 'https://images.unsplash.com/photo-1593642632823-8f785ba67e45?q=80&w=600' },
-    { id: 10, name: 'Laptop ASUS TUF Gaming A15 - Ryzen 7 7735HS, RTX 4050', price: '23.490.000đ', oldPrice: '26.990.000đ', discount: '-13%', badge: 'BÁN CHẠY', image: 'https://images.unsplash.com/photo-1541807084-5c52b6b3adef?q=80&w=600' },
+    { id: 1, name: 'Laptop Lenovo Legion 5 2025 - AMD R7 7735HS, RTX 4060 8GB', price: '28.990.000đ', oldPrice: '32.990.000đ', discount: '-12%', badge: 'BÁN CHẠY', image: 'https://images.unsplash.com/photo-1603302576837-37561b2e2302?q=85&w=800&auto=format' },
+    { id: 2, name: 'Laptop ASUS ROG Strix G16 - i7 13700HX, RTX 4050 6GB', price: '31.490.000đ', oldPrice: '34.990.000đ', discount: '-10%', badge: 'HOT SALE', image: 'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?q=85&w=800&auto=format' },
+    { id: 3, name: 'Laptop Lenovo LOQ 15 Gaming - i5 12450HX, RTX 3050', price: '18.490.000đ', oldPrice: '20.990.000đ', discount: '-11%', badge: 'GIÁ TỐT', image: 'https://images.unsplash.com/photo-1593642632823-8f785ba67e45?q=85&w=800&auto=format' },
+    { id: 4, name: 'Laptop Apple MacBook Pro 14" M3 - 8-Core CPU, 10-Core GPU', price: '39.990.000đ', oldPrice: '42.990.000đ', discount: '-7%', badge: 'CAO CẤP', image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?q=85&w=800&auto=format' },
+    { id: 5, name: 'Laptop Acer Predator Helios Neo 16 - i7 13700HX, RTX 4060', price: '35.990.000đ', oldPrice: '39.990.000đ', discount: '-10%', badge: 'GAMING', image: 'https://images.unsplash.com/photo-1541807084-5c52b6b3adef?q=85&w=800&auto=format' },
+    { id: 6, name: 'Laptop Dell XPS 13 Plus 9320 - i7 1360P, 16GB RAM, OLED', price: '41.990.000đ', oldPrice: '45.990.000đ', discount: '-8%', badge: 'SANG TRỌNG', image: 'https://images.unsplash.com/photo-1525547719571-a2d4ac8945e2?q=85&w=800&auto=format' },
+    { id: 7, name: 'Laptop HP Victus 16 - Ryzen 5 7640HS, RTX 4050 6GB', price: '21.990.000đ', oldPrice: '24.990.000đ', discount: '-12%', badge: 'GIÁ TỐT', image: 'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?q=85&w=800&auto=format' },
+    { id: 8, name: 'Laptop MSI Cyborg 15 - i5 12450H, RTX 4050 6GB', price: '19.990.000đ', oldPrice: '22.490.000đ', discount: '-11%', badge: 'HOT SALE', image: 'https://images.unsplash.com/photo-1603302576837-37561b2e2302?q=85&w=800&auto=format' },
+    { id: 9, name: 'Laptop Gigabyte G5 GE - i5 12500H, RTX 3050 4GB', price: '16.990.000đ', oldPrice: '18.990.000đ', discount: '-10%', badge: 'GIÁ RẺ', image: 'https://images.unsplash.com/photo-1593642632823-8f785ba67e45?q=85&w=800&auto=format' },
+    { id: 10, name: 'Laptop ASUS TUF Gaming A15 - Ryzen 7 7735HS, RTX 4050', price: '23.490.000đ', oldPrice: '26.990.000đ', discount: '-13%', badge: 'BÁN CHẠY', image: 'https://images.unsplash.com/photo-1541807084-5c52b6b3adef?q=85&w=800&auto=format' },
 ];
 
 function Footer() {
@@ -181,11 +230,325 @@ function Footer() {
     );
 }
 
+function ChevronIcon({ direction }: { direction: 'left' | 'right' }) {
+    return (
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5" aria-hidden="true">
+            <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d={direction === 'left' ? 'M15.75 19.5L8.25 12l7.5-7.5' : 'M8.25 4.5l7.5 7.5-7.5 7.5'}
+            />
+        </svg>
+    );
+}
+
+/* Người dùng bật "giảm chuyển động" trong hệ điều hành thì tắt hiệu ứng tự chạy */
+const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
+
+function usePrefersReducedMotion() {
+    return useSyncExternalStore(
+        (onChange) => {
+            const mq = window.matchMedia(REDUCED_MOTION_QUERY);
+            mq.addEventListener('change', onChange);
+            return () => mq.removeEventListener('change', onChange);
+        },
+        () => window.matchMedia(REDUCED_MOTION_QUERY).matches, // giá trị trên trình duyệt
+        () => false // giá trị khi render trên server
+    );
+}
+
+/* Banner chính dạng slider: tự chuyển, có mũi tên, dấu chấm, hiệu ứng zoom nhẹ */
+function HeroSlider() {
+    const [current, setCurrent] = useState(0);
+    const [paused, setPaused] = useState(false);
+    const reducedMotion = usePrefersReducedMotion();
+    const count = HERO_SLIDES.length;
+
+    const goTo = (index: number) => setCurrent((index + count) % count);
+
+    // Dùng setTimeout theo `current` để bấm chuyển tay xong thì đếm lại từ đầu
+    useEffect(() => {
+        if (paused || reducedMotion) return;
+        const timer = setTimeout(() => setCurrent((c) => (c + 1) % count), HERO_INTERVAL);
+        return () => clearTimeout(timer);
+    }, [current, paused, reducedMotion, count]);
+
+    return (
+        <div
+            role="region"
+            aria-roledescription="carousel"
+            aria-label="Khuyến mãi nổi bật"
+            onMouseEnter={() => setPaused(true)}
+            onMouseLeave={() => setPaused(false)}
+            onFocusCapture={() => setPaused(true)}
+            onBlurCapture={() => setPaused(false)}
+            className="group/hero lg:col-span-2 relative rounded-2xl overflow-hidden min-h-[400px] sm:min-h-[340px] bg-slate-950 text-white shadow-sm"
+        >
+            {HERO_SLIDES.map((slide, i) => {
+                const active = i === current;
+                const Heading = i === 0 ? 'h1' : 'h2'; // chỉ 1 thẻ h1 trên trang (tốt cho SEO)
+
+                return (
+                    <div
+                        key={slide.id}
+                        role="group"
+                        aria-roledescription="slide"
+                        aria-label={`${i + 1} / ${count}`}
+                        aria-hidden={!active}
+                        className={`absolute inset-0 transition-opacity duration-1000 motion-reduce:transition-none ${active ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
+                            }`}
+                    >
+                        <Image
+                            src={slide.image}
+                            alt=""
+                            fill
+                            priority={i === 0}
+                            quality={90}
+                            sizes="(max-width: 1024px) 100vw, 66vw"
+                            className={`object-cover ease-out transition-transform motion-reduce:transition-none motion-reduce:scale-100 ${active ? 'scale-110 duration-[7000ms]' : 'scale-100 duration-[1200ms]'
+                                }`}
+                        />
+                        {/* Chỉ tối phía có chữ, để phía bên phải của ảnh vẫn sáng và nét */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/85 via-slate-950/45 to-transparent" />
+
+                        <div className="relative z-10 h-full p-8 flex flex-col justify-between">
+                            <div className="max-w-lg">
+                                <span className="bg-red-600 text-white text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wider inline-flex items-center gap-1">
+                                    {slide.tag}
+                                </span>
+                                <Heading className="text-3xl sm:text-4xl font-extrabold uppercase mt-4 mb-3 tracking-wide leading-tight">
+                                    {slide.title}
+                                </Heading>
+                                <p className="text-xs sm:text-sm text-gray-100 font-medium leading-relaxed">
+                                    {slide.description}
+                                </p>
+                            </div>
+                            <div className="pt-6">
+                                <Link
+                                    href={slide.href}
+                                    tabIndex={active ? 0 : -1}
+                                    className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-3 rounded-xl transition-all text-xs uppercase tracking-wider shadow-md"
+                                >
+                                    {slide.cta}
+                                </Link>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })}
+
+            {/* Mũi tên: màn lớn chỉ hiện khi rê chuột vào, màn nhỏ luôn hiện */}
+            <button
+                type="button"
+                aria-label="Banner trước"
+                onClick={() => goTo(current - 1)}
+                className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-black/30 hover:bg-black/60 text-white flex items-center justify-center backdrop-blur-sm transition-all lg:opacity-0 lg:group-hover/hero:opacity-100 focus-visible:opacity-100"
+            >
+                <ChevronIcon direction="left" />
+            </button>
+            <button
+                type="button"
+                aria-label="Banner tiếp theo"
+                onClick={() => goTo(current + 1)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-black/30 hover:bg-black/60 text-white flex items-center justify-center backdrop-blur-sm transition-all lg:opacity-0 lg:group-hover/hero:opacity-100 focus-visible:opacity-100"
+            >
+                <ChevronIcon direction="right" />
+            </button>
+
+            {/* Dấu chấm */}
+            <div className="absolute bottom-4 right-6 z-20 flex items-center">
+                {HERO_SLIDES.map((slide, i) => (
+                    <button
+                        key={slide.id}
+                        type="button"
+                        aria-label={`Chuyển đến banner ${i + 1}`}
+                        aria-current={i === current}
+                        onClick={() => goTo(i)}
+                        className="p-1.5"
+                    >
+                        <span
+                            className={`block h-2 rounded-full transition-all duration-300 ${i === current ? 'w-6 bg-white' : 'w-2 bg-white/50 hover:bg-white/80'
+                                }`}
+                        />
+                    </button>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+function ProductCard({ item, onAddToCart }: { item: Laptop; onAddToCart: (laptop: Laptop) => void }) {
+    const isProductPhoto = item.image.startsWith('/');
+
+    return (
+        <div className="w-[280px] flex-shrink-0 snap-start bg-white rounded-2xl p-4 border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col justify-between group">
+            <div>
+                <div
+                    className={`relative h-44 rounded-xl overflow-hidden mb-3 ${isProductPhoto ? 'bg-white border border-gray-100' : 'bg-gray-50'
+                        }`}
+                >
+                    <span className="absolute top-2 left-2 z-10 bg-red-600 text-white text-[9px] font-bold px-2 py-0.5 rounded uppercase">
+                        {item.badge}
+                    </span>
+                    <Image
+                        src={item.image}
+                        alt={item.name}
+                        fill
+                        quality={90}
+                        sizes="280px"
+                        className={`group-hover:scale-105 transition-transform duration-500 ${isProductPhoto ? 'object-contain p-3' : 'object-cover'
+                            }`}
+                    />
+                </div>
+
+                <h3 className="text-xs font-bold text-slate-800 line-clamp-2 min-h-[32px] group-hover:text-blue-600 transition-colors leading-snug">
+                    {item.name}
+                </h3>
+            </div>
+
+            <div className="mt-4">
+                <div className="flex items-baseline justify-between mb-3">
+                    <div>
+                        <span className="text-base font-extrabold text-blue-600 block">{item.price}</span>
+                        <span className="text-[11px] text-gray-400 line-through">{item.oldPrice}</span>
+                    </div>
+                    <span className="bg-red-50 text-red-600 text-[10px] font-bold px-1.5 py-0.5 rounded">
+                        {item.discount}
+                    </span>
+                </div>
+
+                <button
+                    type="button"
+                    onClick={() => onAddToCart(item)}
+                    className="w-full bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white font-bold text-xs py-2.5 rounded-xl transition-all"
+                >
+                    Thêm vào giỏ hàng
+                </button>
+            </div>
+        </div>
+    );
+}
+
+function FeaturedSection({ onAddToCart }: { onAddToCart: (laptop: Laptop) => void }) {
+    const scrollRef = useRef<HTMLDivElement>(null);
+    const [paused, setPaused] = useState(false);
+    const reducedMotion = usePrefersReducedMotion();
+    const [scrollState, setScrollState] = useState({ canPrev: false, canNext: true, page: 0, pageCount: 1 });
+
+    const updateScrollState = useCallback(() => {
+        const el = scrollRef.current;
+        if (!el) return;
+
+        const maxScroll = el.scrollWidth - el.clientWidth;
+        const pageCount = Math.max(1, Math.ceil(el.scrollWidth / el.clientWidth));
+        const page = maxScroll > 0 ? Math.round((el.scrollLeft / maxScroll) * (pageCount - 1)) : 0;
+
+        setScrollState({
+            canPrev: el.scrollLeft > 4,
+            canNext: el.scrollLeft < maxScroll - 4,
+            page,
+            pageCount,
+        });
+    }, []);
+
+    useEffect(() => {
+        const frame = requestAnimationFrame(updateScrollState);
+        window.addEventListener('resize', updateScrollState);
+        return () => {
+            cancelAnimationFrame(frame);
+            window.removeEventListener('resize', updateScrollState);
+        };
+    }, [updateScrollState]);
+
+    const scrollByPage = (direction: 1 | -1) => {
+        const el = scrollRef.current;
+        if (!el) return;
+        const step = CARD_WIDTH + CARD_GAP;
+        const visibleCards = Math.max(1, Math.floor(el.clientWidth / step));
+        el.scrollBy({ left: direction * visibleCards * step, behavior: 'smooth' });
+    };
+
+    const scrollToPage = (index: number) => {
+        const el = scrollRef.current;
+        if (!el) return;
+        const maxScroll = el.scrollWidth - el.clientWidth;
+        const { pageCount } = scrollState;
+        el.scrollTo({ left: pageCount > 1 ? (index / (pageCount - 1)) * maxScroll : 0, behavior: 'smooth' });
+    };
+
+    useEffect(() => {
+        if (paused || reducedMotion) return;
+        const interval = setInterval(() => {
+            const el = scrollRef.current;
+            if (!el || document.hidden) return;
+            const maxScroll = el.scrollWidth - el.clientWidth;
+            if (el.scrollLeft >= maxScroll - 4) {
+                el.scrollTo({ left: 0, behavior: 'smooth' });
+            } else {
+                el.scrollBy({ left: CARD_WIDTH + CARD_GAP, behavior: 'smooth' });
+            }
+        }, PRODUCT_AUTOPLAY_INTERVAL);
+        return () => clearInterval(interval);
+    }, [paused, reducedMotion]);
+
+    const { canPrev, canNext, page, pageCount } = scrollState;
+    const arrowClass =
+        'w-9 h-9 rounded-full border border-gray-200 bg-white text-slate-700 flex items-center justify-center transition-colors hover:bg-blue-600 hover:text-white hover:border-blue-600 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-slate-700 disabled:hover:border-gray-200';
+
+    return (
+        <section className="max-w-7xl mx-auto px-4 py-6" aria-label="Laptop nổi bật">
+            <div className="mb-4 flex items-center justify-between gap-4">
+                <h2 className="text-xl font-extrabold uppercase text-slate-900 tracking-tight">LAPTOP NỔI BẬT</h2>
+                <div className="flex items-center gap-2">
+                    <button type="button" aria-label="Xem sản phẩm trước" disabled={!canPrev} onClick={() => scrollByPage(-1)} className={arrowClass}>
+                        <ChevronIcon direction="left" />
+                    </button>
+                    <button type="button" aria-label="Xem sản phẩm tiếp theo" disabled={!canNext} onClick={() => scrollByPage(1)} className={arrowClass}>
+                        <ChevronIcon direction="right" />
+                    </button>
+                </div>
+            </div>
+
+            <div
+                ref={scrollRef}
+                onScroll={updateScrollState}
+                onMouseEnter={() => setPaused(true)}
+                onMouseLeave={() => setPaused(false)}
+                onFocusCapture={() => setPaused(true)}
+                onBlurCapture={() => setPaused(false)}
+                className={`flex gap-4 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-4 ${NO_SCROLLBAR}`}
+            >
+                {FEATURED_LAPTOPS.map((item) => (
+                    <ProductCard key={item.id} item={item} onAddToCart={onAddToCart} />
+                ))}
+            </div>
+
+            {pageCount > 1 && (
+                <div className="flex justify-center items-center">
+                    {Array.from({ length: pageCount }).map((_, i) => (
+                        <button
+                            key={i}
+                            type="button"
+                            aria-label={`Trang ${i + 1}`}
+                            aria-current={i === page}
+                            onClick={() => scrollToPage(i)}
+                            className="p-1.5"
+                        >
+                            <span
+                                className={`block h-2 rounded-full transition-all duration-300 ${i === page ? 'w-6 bg-blue-600' : 'w-2 bg-gray-300 hover:bg-gray-400'
+                                    }`}
+                            />
+                        </button>
+                    ))}
+                </div>
+            )}
+        </section>
+    );
+}
+
 export default function HomePage() {
     const router = useRouter();
     const [cartCount, setCartCount] = useState<number>(2);
-    const scrollRef = useRef<HTMLDivElement>(null);
-    const [isHovered, setIsHovered] = useState<boolean>(false);
     const [searchQuery, setSearchQuery] = useState<string>('');
 
     const [user, setUser] = useState<User | null>(null);
@@ -228,22 +591,6 @@ export default function HomePage() {
     const handleAddToCart = (laptop?: Laptop) => {
         setCartCount((prev) => prev + 1);
     };
-
-    useEffect(() => {
-        if (isHovered) return;
-        const interval = setInterval(() => {
-            if (scrollRef.current) {
-                const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
-                const cardWidth = 300;
-                if (scrollLeft + clientWidth >= scrollWidth - 10) {
-                    scrollRef.current.scrollTo({ left: 0, behavior: 'smooth' });
-                } else {
-                    scrollRef.current.scrollBy({ left: cardWidth, behavior: 'smooth' });
-                }
-            }
-        }, 8000);
-        return () => clearInterval(interval);
-    }, [isHovered]);
 
     return (
         <div className="min-h-screen bg-[#f8f9fa] text-slate-800 font-sans antialiased flex flex-col justify-between">
@@ -300,7 +647,6 @@ export default function HomePage() {
                                         </button>
                                     </div>
                                 ) : (
-                                    /* Khi chưa đăng nhập -> Hiện cả 2 nút Đăng nhập & Đăng ký */
                                     <div className="flex items-center gap-2">
                                         <Link
                                             href="/login"
@@ -321,7 +667,7 @@ export default function HomePage() {
                     </div>
 
                     <div className="bg-[#111827] text-white text-xs font-bold py-3">
-                        <div className="max-w-7xl mx-auto px-4 flex items-center gap-8 overflow-x-auto whitespace-nowrap no-scrollbar">
+                        <div className={`max-w-7xl mx-auto px-4 flex items-center gap-8 overflow-x-auto whitespace-nowrap ${NO_SCROLLBAR}`}>
                             <Link href="/laptop-moi" className="hover:text-blue-400 flex items-center gap-2">💻 Laptop Mới</Link>
                             <Link href="/laptop-cu" className="hover:text-blue-400 flex items-center gap-2">🖥️ Laptop Cũ</Link>
                             <Link href="/linh-kien" className="hover:text-blue-400 flex items-center gap-2">🔌 Linh Kiện Laptop</Link>
@@ -335,43 +681,20 @@ export default function HomePage() {
                 {/* Banner Promotion */}
                 <section className="max-w-7xl mx-auto px-4 py-6">
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-stretch">
-                        <div className="lg:col-span-2 relative rounded-2xl overflow-hidden min-h-[320px] bg-slate-950 text-white p-8 flex flex-col justify-between shadow-sm">
-                            <Image
-                                src="https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1200"
-                                alt="Promo Banner"
-                                fill
-                                priority
-                                sizes="(max-width: 1024px) 100vw, 66vw"
-                                className="object-cover opacity-50 -z-0"
-                            />
-                            <div className="relative z-10 max-w-lg">
-                                <span className="bg-red-600 text-white text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wider inline-flex items-center gap-1">
-                                    🔥 HOT PROMO
-                                </span>
-                                <h1 className="text-3xl sm:text-4xl font-extrabold uppercase mt-4 mb-3 tracking-wide leading-tight">
-                                    ĐẠI LỄ THẢ GA - SẮN SALE CỰC ĐÃ
-                                </h1>
-                                <p className="text-xs sm:text-sm text-gray-200 font-medium leading-relaxed">
-                                    Giảm ngay 2.000.000đ trực tiếp vào hóa đơn khi mua Laptop RTX 40 Series.
-                                </p>
-                            </div>
-                            <div className="relative z-10 pt-6">
-                                <button type="button" className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-3 rounded-xl transition-all text-xs uppercase tracking-wider shadow-md">
-                                    Khám Phá Ngay
-                                </button>
-                            </div>
-                        </div>
+                        <HeroSlider />
 
                         <div className="flex flex-col gap-4">
                             <div className="flex-1 relative rounded-2xl overflow-hidden p-6 text-white flex flex-col justify-between min-h-[155px] shadow-sm">
                                 <Image
-                                    src="https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=600"
-                                    alt="Service Banner"
+                                    src="https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=85&w=1000&auto=format"
+                                    alt="Bảo hành điện tử"
                                     fill
+                                    quality={90}
                                     sizes="(max-width: 1024px) 100vw, 33vw"
                                     className="object-cover -z-0"
                                 />
-                                <div className="absolute inset-0 bg-gradient-to-r from-red-600/90 to-red-700/80 -z-0" />
+                                {/* Màu phủ đậm ở phía chữ, nhạt dần sang phải để lộ ảnh */}
+                                <div className="absolute inset-0 bg-gradient-to-r from-red-700/95 via-red-600/75 to-red-500/25 -z-0" />
                                 <div className="relative z-10">
                                     <span className="bg-white/20 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase">
                                         DỊCH VỤ
@@ -379,20 +702,21 @@ export default function HomePage() {
                                     <h3 className="text-xl font-extrabold mt-2 uppercase tracking-wide">BẢO HÀNH ĐIỆN TỬ</h3>
                                     <p className="text-xs opacity-90 font-medium mt-1">Nhanh chóng - Tiện lợi - Uy tín 100%</p>
                                 </div>
-                                <span className="relative z-10 text-xs font-bold flex items-center gap-1 mt-2 cursor-pointer hover:underline">
+                                <Link href="/tra-cuu-bao-hanh" className="relative z-10 text-xs font-bold flex items-center gap-1 mt-2 hover:underline">
                                     Xem chi tiết ➔
-                                </span>
+                                </Link>
                             </div>
 
                             <div className="flex-1 relative rounded-2xl overflow-hidden p-6 text-white flex flex-col justify-between min-h-[155px] shadow-sm">
                                 <Image
-                                    src="https://images.unsplash.com/photo-1511512578047-dfb367046420?q=80&w=600"
-                                    alt="Customer Loyalty Banner"
+                                    src="https://images.unsplash.com/photo-1511512578047-dfb367046420?q=85&w=1000&auto=format"
+                                    alt="Tri ân khách hàng"
                                     fill
+                                    quality={90}
                                     sizes="(max-width: 1024px) 100vw, 33vw"
                                     className="object-cover -z-0"
                                 />
-                                <div className="absolute inset-0 bg-gradient-to-r from-slate-900/95 to-blue-950/90 -z-0" />
+                                <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-900/75 to-blue-900/25 -z-0" />
                                 <div className="relative z-10">
                                     <span className="bg-white/10 text-blue-300 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase">
                                         TRI ÂN KHÁCH HÀNG
@@ -400,79 +724,16 @@ export default function HomePage() {
                                     <h3 className="text-xl font-extrabold mt-2 uppercase tracking-wide">TẶNG TỚI 1 TRIỆU</h3>
                                     <p className="text-xs opacity-80 font-medium mt-1">Dành riêng cho khách hàng cũ mua lại</p>
                                 </div>
-                                <span className="relative z-10 text-xs font-bold flex items-center gap-1 mt-2 text-blue-400 cursor-pointer hover:underline">
+                                <Link href="/laptop-moi" className="relative z-10 text-xs font-bold flex items-center gap-1 mt-2 text-blue-400 hover:underline">
                                     Nhận ưu đãi ngay ➔
-                                </span>
+                                </Link>
                             </div>
                         </div>
                     </div>
                 </section>
 
                 {/* Danh Sách Laptop Nổi Bật */}
-                <section className="max-w-7xl mx-auto px-4 py-6">
-                    <div className="mb-4">
-                        <h2 className="text-xl font-extrabold uppercase text-slate-900 tracking-tight">
-                            LAPTOP NỔI BẬT
-                        </h2>
-                    </div>
-
-                    <div
-                        ref={scrollRef}
-                        onMouseEnter={() => setIsHovered(true)}
-                        onMouseLeave={() => setIsHovered(false)}
-                        className="flex gap-4 overflow-x-auto scroll-smooth pb-4 no-scrollbar"
-                    >
-                        {FEATURED_LAPTOPS.map((item) => (
-                            <div
-                                key={item.id}
-                                className="w-[280px] flex-shrink-0 bg-white rounded-2xl p-4 border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col justify-between group"
-                            >
-                                <div>
-                                    <div className="relative h-44 rounded-xl overflow-hidden bg-gray-50 mb-3">
-                                        <span className="absolute top-2 left-2 z-10 bg-red-600 text-white text-[9px] font-bold px-2 py-0.5 rounded uppercase">
-                                            {item.badge}
-                                        </span>
-                                        <Image
-                                            src={item.image}
-                                            alt={item.name}
-                                            fill
-                                            sizes="280px"
-                                            className="object-cover group-hover:scale-105 transition-transform duration-500"
-                                        />
-                                    </div>
-
-                                    <h3 className="text-xs font-bold text-slate-800 line-clamp-2 min-h-[32px] group-hover:text-blue-600 transition-colors leading-snug">
-                                        {item.name}
-                                    </h3>
-                                </div>
-
-                                <div className="mt-4">
-                                    <div className="flex items-baseline justify-between mb-3">
-                                        <div>
-                                            <span className="text-base font-extrabold text-blue-600 block">
-                                                {item.price}
-                                            </span>
-                                            <span className="text-[11px] text-gray-400 line-through">
-                                                {item.oldPrice}
-                                            </span>
-                                        </div>
-                                        <span className="bg-red-50 text-red-600 text-[10px] font-bold px-1.5 py-0.5 rounded">
-                                            {item.discount}
-                                        </span>
-                                    </div>
-
-                                    <button
-                                        type="button"
-                                        onClick={() => handleAddToCart(item)}
-                                        className="w-full bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white font-bold text-xs py-2.5 rounded-xl transition-all"
-                                    >
-                                        Thêm vào giỏ hàng
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </section>
+                <FeaturedSection onAddToCart={handleAddToCart} />
 
                 {/* Khối Thông Tin Ưu Điểm Dịch Vụ */}
                 <section className="max-w-7xl mx-auto px-4 py-8 border-t border-gray-200/80 mt-6">
