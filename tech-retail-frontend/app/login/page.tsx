@@ -2,16 +2,63 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
     const [showPassword, setShowPassword] = useState(false);
+    const [identifier, setIdentifier] = useState('');
+    const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [errorMsg, setErrorMsg] = useState('');
+
+    const router = useRouter();
+
+    const handleSubmit = async (e: React.SyntheticEvent) => {
+        e.preventDefault();
+        setErrorMsg('');
+        setLoading(true);
+
+        try {
+            const res = await fetch('/api/Auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    usernameOrEmail: identifier,
+                    password: password,
+                }),
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin!');
+            }
+
+            if (data.token) {
+                localStorage.setItem('token', data.token);
+                if (data.user) {
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                }
+            }
+
+            router.push('/');
+        } catch (err: unknown) {
+            if (err instanceof Error) {
+                setErrorMsg(err.message);
+            } else {
+                setErrorMsg('Có lỗi xảy ra, vui lòng thử lại!');
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <div className="min-h-screen bg-slate-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans antialiased relative overflow-hidden">
-            {}
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.15)_0,transparent_70%)] pointer-events-none" />
 
-            {}
             <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
                 <Link href="/" className="flex justify-center mb-2">
                     <span className="text-3xl font-black text-white tracking-widest hover:scale-105 transition-transform drop-shadow-[0_2px_10px_rgba(59,130,246,0.5)]">
@@ -20,13 +67,11 @@ export default function LoginPage() {
                 </Link>
             </div>
 
-            {}
             <div className="mt-4 sm:mx-auto sm:w-full sm:max-w-md px-4 relative z-10">
                 <div
                     className="bg-white py-10 px-8 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7)] rounded-3xl border-4 border-gray-100 relative overflow-hidden bg-cover bg-center transition-all duration-300"
                     style={{ backgroundImage: `url('/images/kaito-card-bg.jpg')` }}
                 >
-                    {}
                     <div className="absolute inset-0 bg-white/40 pointer-events-none" />
 
                     <div className="relative z-10">
@@ -37,23 +82,31 @@ export default function LoginPage() {
                             Xác thực danh tính để truy cập hệ thống
                         </p>
 
-                        <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
-                            {}
+                        {errorMsg && (
+                            <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 text-xs font-bold rounded-xl text-center">
+                                {errorMsg}
+                            </div>
+                        )}
+
+                        <form className="space-y-4" onSubmit={handleSubmit}>
+                            {/* Ô nhập Email hoặc Số điện thoại */}
                             <div>
-                                <label htmlFor="email" className="block text-[11px] font-black text-slate-800 uppercase tracking-wider mb-1">
-                                    Địa chỉ Email / Tên đăng nhập
+                                <label htmlFor="identifier" className="block text-[11px] font-black text-slate-800 uppercase tracking-wider mb-1">
+                                    Email hoặc Số điện thoại
                                 </label>
                                 <input
-                                    id="email"
-                                    name="email"
-                                    type="email"
+                                    id="identifier"
+                                    name="identifier"
+                                    type="text"
                                     required
-                                    placeholder="phantom@gmail.com"
+                                    value={identifier}
+                                    onChange={(e) => setIdentifier(e.target.value)}
+                                    placeholder="phantom@gmail.com hoặc 0987654321"
                                     className="w-full bg-white/90 border border-gray-300 text-slate-900 placeholder-gray-400 rounded-xl py-3 px-4 text-sm font-medium focus:outline-none focus:border-blue-600 focus:bg-white focus:ring-4 focus:ring-blue-100 transition-all shadow-sm"
                                 />
                             </div>
 
-                            {}
+                            {/* Ô nhập Mật khẩu */}
                             <div>
                                 <div className="flex items-center justify-between mb-1">
                                     <label htmlFor="password" className="block text-[11px] font-black text-slate-800 uppercase tracking-wider">
@@ -69,6 +122,8 @@ export default function LoginPage() {
                                         name="password"
                                         type={showPassword ? 'text' : 'password'}
                                         required
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
                                         placeholder="••••••••"
                                         className="w-full bg-white/90 border border-gray-300 text-slate-900 placeholder-gray-400 rounded-xl py-3 pl-4 pr-11 text-sm font-medium focus:outline-none focus:border-blue-600 focus:bg-white focus:ring-4 focus:ring-blue-100 transition-all shadow-sm"
                                     />
@@ -91,7 +146,6 @@ export default function LoginPage() {
                                 </div>
                             </div>
 
-                            {}
                             <div className="flex items-center">
                                 <input
                                     id="remember-me"
@@ -104,18 +158,17 @@ export default function LoginPage() {
                                 </label>
                             </div>
 
-                            {}
                             <div className="pt-3">
                                 <button
                                     type="submit"
-                                    className="w-full bg-slate-900 text-white font-black text-base py-4 rounded-xl shadow-xl hover:bg-blue-600 active:scale-95 transition-all duration-200 tracking-[0.2em] uppercase"
+                                    disabled={loading}
+                                    className="w-full bg-slate-900 text-white font-black text-base py-4 rounded-xl shadow-xl hover:bg-blue-600 active:scale-95 transition-all duration-200 tracking-[0.2em] uppercase disabled:opacity-50"
                                 >
-                                    ĐĂNG NHẬP
+                                    {loading ? 'ĐANG XỬ LÝ...' : 'ĐĂNG NHẬP'}
                                 </button>
                             </div>
                         </form>
 
-                        {}
                         <div className="mt-6 border-t border-gray-200/80 pt-4 text-center">
                             <p className="text-xs text-slate-700 font-bold">
                                 Chưa có thẻ thành viên?{' '}
