@@ -5,49 +5,17 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Be_Vietnam_Pro } from 'next/font/google';
 
-// Be Vietnam Pro được thiết kế riêng cho tiếng Việt: dấu (ả, ẩ, ộ, ợ...) cân đối, không bị lệch/serif fallback
 const beVietnam = Be_Vietnam_Pro({
     subsets: ['vietnamese', 'latin'],
     weight: ['400', '500', '600', '700', '800'],
     display: 'swap',
 });
 
-const INPUT_BASE =
-    'w-full bg-white border rounded-xl px-4 py-3.5 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 transition-all shadow-sm';
-
-// Ô nhập bình thường: viền xám, focus xanh. Ô bị lỗi: viền đỏ
-const inputClass = (hasError: boolean) =>
-    `${INPUT_BASE} ${hasError
-        ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
-        : 'border-slate-200 focus:border-blue-500 focus:ring-blue-500/20'
-    }`;
+const INPUT_CLASS =
+    'w-full bg-white border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm';
 
 const LABEL_CLASS = 'block text-xs font-bold text-slate-800 tracking-wider uppercase mb-2';
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-type FieldName = 'email' | 'phone' | 'password' | 'confirmPassword';
-type FieldErrors = Partial<Record<FieldName, string>>;
-
-// id của từng ô, dùng để tự động focus vào ô lỗi đầu tiên
-const FIELD_IDS: Record<FieldName, string> = {
-    email: 'email',
-    phone: 'phone',
-    password: 'password',
-    confirmPassword: 'confirm-password',
-};
-
-/* Thông báo lỗi dưới ô nhập: chữ đỏ, in đậm */
-function FieldError({ id, message }: { id: string; message?: string }) {
-    if (!message) return null;
-    return (
-        <p id={id} role="alert" className="mt-1.5 text-xs font-bold text-red-600">
-            {message}
-        </p>
-    );
-}
-
-/* Icon mắt chuẩn (Heroicons outline) */
 function EyeIcon() {
     return (
         <svg
@@ -69,7 +37,6 @@ function EyeIcon() {
     );
 }
 
-/* Icon mắt gạch chéo chuẩn (Heroicons outline) */
 function EyeSlashIcon() {
     return (
         <svg
@@ -97,10 +64,9 @@ interface PasswordFieldProps {
     onChange: (value: string) => void;
     show: boolean;
     onToggle: () => void;
-    error?: string;
 }
 
-function PasswordField({ id, label, value, onChange, show, onToggle, error }: PasswordFieldProps) {
+function PasswordField({ id, label, value, onChange, show, onToggle }: PasswordFieldProps) {
     return (
         <div>
             <label htmlFor={id} className={LABEL_CLASS}>
@@ -115,10 +81,8 @@ function PasswordField({ id, label, value, onChange, show, onToggle, error }: Pa
                     autoComplete="new-password"
                     value={value}
                     onChange={(e) => onChange(e.target.value)}
-                    aria-invalid={!!error}
-                    aria-describedby={error ? `${id}-error` : undefined}
                     placeholder="••••••••"
-                    className={`${inputClass(!!error)} pr-12`}
+                    className={`${INPUT_CLASS} pr-12`}
                 />
                 <button
                     type="button"
@@ -130,7 +94,6 @@ function PasswordField({ id, label, value, onChange, show, onToggle, error }: Pa
                     {show ? <EyeSlashIcon /> : <EyeIcon />}
                 </button>
             </div>
-            <FieldError id={`${id}-error`} message={error} />
         </div>
     );
 }
@@ -144,50 +107,14 @@ export default function RegisterPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [error, setError] = useState('');
-    const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
     const [loading, setLoading] = useState(false);
-
-    // Xóa lỗi của ô đó ngay khi người dùng bắt đầu gõ lại
-    const clearFieldError = (field: FieldName) => {
-        setFieldErrors((prev) => (prev[field] ? { ...prev, [field]: undefined } : prev));
-    };
-
-    const validate = (): FieldErrors => {
-        const errs: FieldErrors = {};
-
-        if (!email.trim()) {
-            errs.email = 'Vui lòng nhập địa chỉ email.';
-        } else if (!EMAIL_REGEX.test(email.trim())) {
-            errs.email = 'Địa chỉ email không hợp lệ. Ví dụ: ten@gmail.com';
-        }
-
-        if (!phone.trim()) {
-            errs.phone = 'Vui lòng nhập số điện thoại.';
-        }
-
-        if (!password) {
-            errs.password = 'Vui lòng nhập mật khẩu.';
-        }
-
-        if (!confirmPassword) {
-            errs.confirmPassword = 'Vui lòng xác nhận mật khẩu.';
-        } else if (password !== confirmPassword) {
-            errs.confirmPassword = 'Mật khẩu xác nhận không khớp!';
-        }
-
-        return errs;
-    };
 
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
 
-        const errs = validate();
-        setFieldErrors(errs);
-
-        const firstInvalid = (Object.keys(FIELD_IDS) as FieldName[]).find((key) => errs[key]);
-        if (firstInvalid) {
-            document.getElementById(FIELD_IDS[firstInvalid])?.focus();
+        if (password !== confirmPassword) {
+            setError('Mật khẩu xác nhận không khớp!');
             return;
         }
 
@@ -234,14 +161,13 @@ export default function RegisterPage() {
                 {error && (
                     <div
                         role="alert"
-                        className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 text-xs rounded-xl font-bold text-center"
+                        className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 text-xs rounded-xl font-semibold text-center"
                     >
                         {error}
                     </div>
                 )}
 
-                {/* noValidate: tắt bong bóng cảnh báo mặc định của trình duyệt (tiếng Anh, không chỉnh style được) */}
-                <form onSubmit={handleRegister} noValidate className="space-y-5">
+                <form onSubmit={handleRegister} className="space-y-5">
                     {/* ĐỊA CHỈ EMAIL */}
                     <div>
                         <label htmlFor="email" className={LABEL_CLASS}>
@@ -254,16 +180,10 @@ export default function RegisterPage() {
                             required
                             autoComplete="email"
                             value={email}
-                            onChange={(e) => {
-                                setEmail(e.target.value);
-                                clearFieldError('email');
-                            }}
-                            aria-invalid={!!fieldErrors.email}
-                            aria-describedby={fieldErrors.email ? 'email-error' : undefined}
+                            onChange={(e) => setEmail(e.target.value)}
                             placeholder="phantom@gmail.com"
-                            className={inputClass(!!fieldErrors.email)}
+                            className={INPUT_CLASS}
                         />
-                        <FieldError id="email-error" message={fieldErrors.email} />
                     </div>
 
                     {/* SỐ ĐIỆN THOẠI */}
@@ -279,16 +199,10 @@ export default function RegisterPage() {
                             required
                             autoComplete="tel"
                             value={phone}
-                            onChange={(e) => {
-                                setPhone(e.target.value);
-                                clearFieldError('phone');
-                            }}
-                            aria-invalid={!!fieldErrors.phone}
-                            aria-describedby={fieldErrors.phone ? 'phone-error' : undefined}
+                            onChange={(e) => setPhone(e.target.value)}
                             placeholder="0886288288"
-                            className={inputClass(!!fieldErrors.phone)}
+                            className={INPUT_CLASS}
                         />
-                        <FieldError id="phone-error" message={fieldErrors.phone} />
                     </div>
 
                     {/* MẬT KHẨU */}
@@ -296,13 +210,9 @@ export default function RegisterPage() {
                         id="password"
                         label="Mật khẩu bí mật"
                         value={password}
-                        onChange={(v) => {
-                            setPassword(v);
-                            clearFieldError('password');
-                        }}
+                        onChange={setPassword}
                         show={showPassword}
                         onToggle={() => setShowPassword((v) => !v)}
-                        error={fieldErrors.password}
                     />
 
                     {/* XÁC NHẬN MẬT KHẨU */}
@@ -310,13 +220,9 @@ export default function RegisterPage() {
                         id="confirm-password"
                         label="Xác nhận mật khẩu"
                         value={confirmPassword}
-                        onChange={(v) => {
-                            setConfirmPassword(v);
-                            clearFieldError('confirmPassword');
-                        }}
+                        onChange={setConfirmPassword}
                         show={showConfirmPassword}
                         onToggle={() => setShowConfirmPassword((v) => !v)}
-                        error={fieldErrors.confirmPassword}
                     />
 
                     <button
