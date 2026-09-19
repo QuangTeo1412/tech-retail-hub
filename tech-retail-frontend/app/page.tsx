@@ -159,7 +159,7 @@ function Footer() {
 }
 
 export default function HomePage() {
-    const [cartCount, setCartCount] = useState(2);
+    const [cartCount] = useState(2);
     const scrollRef = useRef<HTMLDivElement>(null);
     const [isHovered, setIsHovered] = useState(false);
 

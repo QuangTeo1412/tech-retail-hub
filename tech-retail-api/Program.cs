@@ -10,16 +10,23 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>    
+    options.AddPolicy("AllowAll", policy =>
     {
         policy.SetIsOriginAllowed(origin => true)
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
     });
-}); 
+});
+
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+    });
 
 builder.Services.AddEndpointsApiExplorer();
+
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -62,24 +69,28 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-builder.Services.AddControllers()
-    .AddJsonOptions(options =>
-    {
-        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
-    });
-
 var app = builder.Build();
 
-app.UseSwagger();
-app.UseSwaggerUI();
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
+app.UseHttpsRedirection();
+
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
+app.UseRouting();
 
 app.UseCors("AllowAll");
-
-app.UseStaticFiles();
 
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-    
+
+app.MapFallbackToFile("index.html");
+
 app.Run();
