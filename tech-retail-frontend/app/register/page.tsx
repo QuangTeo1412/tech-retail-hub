@@ -3,6 +3,137 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { Be_Vietnam_Pro } from 'next/font/google';
+
+// Be Vietnam Pro được thiết kế riêng cho tiếng Việt: dấu (ả, ẩ, ộ, ợ...) cân đối, không bị lệch/serif fallback
+const beVietnam = Be_Vietnam_Pro({
+    subsets: ['vietnamese', 'latin'],
+    weight: ['400', '500', '600', '700', '800'],
+    display: 'swap',
+});
+
+const INPUT_BASE =
+    'w-full bg-white border rounded-xl px-4 py-3.5 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 transition-all shadow-sm';
+
+// Ô nhập bình thường: viền xám, focus xanh. Ô bị lỗi: viền đỏ
+const inputClass = (hasError: boolean) =>
+    `${INPUT_BASE} ${hasError
+        ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
+        : 'border-slate-200 focus:border-blue-500 focus:ring-blue-500/20'
+    }`;
+
+const LABEL_CLASS = 'block text-xs font-bold text-slate-800 tracking-wider uppercase mb-2';
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+type FieldName = 'email' | 'phone' | 'password' | 'confirmPassword';
+type FieldErrors = Partial<Record<FieldName, string>>;
+
+// id của từng ô, dùng để tự động focus vào ô lỗi đầu tiên
+const FIELD_IDS: Record<FieldName, string> = {
+    email: 'email',
+    phone: 'phone',
+    password: 'password',
+    confirmPassword: 'confirm-password',
+};
+
+/* Thông báo lỗi dưới ô nhập: chữ đỏ, in đậm */
+function FieldError({ id, message }: { id: string; message?: string }) {
+    if (!message) return null;
+    return (
+        <p id={id} role="alert" className="mt-1.5 text-xs font-bold text-red-600">
+            {message}
+        </p>
+    );
+}
+
+/* Icon mắt chuẩn (Heroicons outline) */
+function EyeIcon() {
+    return (
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={1.5}
+            stroke="currentColor"
+            className="w-5 h-5"
+            aria-hidden="true"
+        >
+            <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"
+            />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+    );
+}
+
+/* Icon mắt gạch chéo chuẩn (Heroicons outline) */
+function EyeSlashIcon() {
+    return (
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={1.5}
+            stroke="currentColor"
+            className="w-5 h-5"
+            aria-hidden="true"
+        >
+            <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"
+            />
+        </svg>
+    );
+}
+
+interface PasswordFieldProps {
+    id: string;
+    label: string;
+    value: string;
+    onChange: (value: string) => void;
+    show: boolean;
+    onToggle: () => void;
+    error?: string;
+}
+
+function PasswordField({ id, label, value, onChange, show, onToggle, error }: PasswordFieldProps) {
+    return (
+        <div>
+            <label htmlFor={id} className={LABEL_CLASS}>
+                {label}
+            </label>
+            <div className="relative">
+                <input
+                    id={id}
+                    name={id}
+                    type={show ? 'text' : 'password'}
+                    required
+                    autoComplete="new-password"
+                    value={value}
+                    onChange={(e) => onChange(e.target.value)}
+                    aria-invalid={!!error}
+                    aria-describedby={error ? `${id}-error` : undefined}
+                    placeholder="••••••••"
+                    className={`${inputClass(!!error)} pr-12`}
+                />
+                <button
+                    type="button"
+                    onClick={onToggle}
+                    aria-label={show ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                    aria-pressed={show}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-slate-500 hover:text-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-colors"
+                >
+                    {show ? <EyeSlashIcon /> : <EyeIcon />}
+                </button>
+            </div>
+            <FieldError id={`${id}-error`} message={error} />
+        </div>
+    );
+}
 
 export default function RegisterPage() {
     const router = useRouter();
@@ -13,14 +144,50 @@ export default function RegisterPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [error, setError] = useState('');
+    const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
     const [loading, setLoading] = useState(false);
+
+    // Xóa lỗi của ô đó ngay khi người dùng bắt đầu gõ lại
+    const clearFieldError = (field: FieldName) => {
+        setFieldErrors((prev) => (prev[field] ? { ...prev, [field]: undefined } : prev));
+    };
+
+    const validate = (): FieldErrors => {
+        const errs: FieldErrors = {};
+
+        if (!email.trim()) {
+            errs.email = 'Vui lòng nhập địa chỉ email.';
+        } else if (!EMAIL_REGEX.test(email.trim())) {
+            errs.email = 'Địa chỉ email không hợp lệ. Ví dụ: ten@gmail.com';
+        }
+
+        if (!phone.trim()) {
+            errs.phone = 'Vui lòng nhập số điện thoại.';
+        }
+
+        if (!password) {
+            errs.password = 'Vui lòng nhập mật khẩu.';
+        }
+
+        if (!confirmPassword) {
+            errs.confirmPassword = 'Vui lòng xác nhận mật khẩu.';
+        } else if (password !== confirmPassword) {
+            errs.confirmPassword = 'Mật khẩu xác nhận không khớp!';
+        }
+
+        return errs;
+    };
 
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
 
-        if (password !== confirmPassword) {
-            setError('Mật khẩu xác nhận không khớp!');
+        const errs = validate();
+        setFieldErrors(errs);
+
+        const firstInvalid = (Object.keys(FIELD_IDS) as FieldName[]).find((key) => errs[key]);
+        if (firstInvalid) {
+            document.getElementById(FIELD_IDS[firstInvalid])?.focus();
             return;
         }
 
@@ -50,145 +217,125 @@ export default function RegisterPage() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
+        <main
+            className={`${beVietnam.className} min-h-screen bg-slate-900 flex items-center justify-center p-4 antialiased`}
+        >
             <div className="max-w-md w-full bg-white rounded-3xl p-8 shadow-2xl border border-slate-100">
                 {/* Header */}
-                <div className="text-center mb-8">
-                    <h1 className="text-2xl font-black text-slate-900 tracking-tight uppercase mb-1">
-                        THẺ ĐĂNG KÝ DANH TÍNH
+                <header className="text-center mb-8">
+                    <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight uppercase mb-1.5">
+                        Thẻ đăng ký danh tính
                     </h1>
-                    <p className="text-sm font-bold text-slate-900">
+                    <p className="text-sm font-semibold text-slate-600">
                         Gia nhập liên minh công nghệ KAITO STORE
                     </p>
-                </div>
+                </header>
 
                 {error && (
-                    <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 text-xs rounded-xl font-bold text-center">
+                    <div
+                        role="alert"
+                        className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 text-xs rounded-xl font-bold text-center"
+                    >
                         {error}
                     </div>
                 )}
 
-                <form onSubmit={handleRegister} className="space-y-5">
+                {/* noValidate: tắt bong bóng cảnh báo mặc định của trình duyệt (tiếng Anh, không chỉnh style được) */}
+                <form onSubmit={handleRegister} noValidate className="space-y-5">
                     {/* ĐỊA CHỈ EMAIL */}
                     <div>
-                        <label className="block text-xs font-black text-slate-800 tracking-wider uppercase mb-2">
-                            ĐỊA CHỈ EMAIL
+                        <label htmlFor="email" className={LABEL_CLASS}>
+                            Địa chỉ email
                         </label>
                         <input
+                            id="email"
+                            name="email"
                             type="email"
                             required
+                            autoComplete="email"
                             value={email}
-                            onChange={(e) => setEmail(e.target.value)}
+                            onChange={(e) => {
+                                setEmail(e.target.value);
+                                clearFieldError('email');
+                            }}
+                            aria-invalid={!!fieldErrors.email}
+                            aria-describedby={fieldErrors.email ? 'email-error' : undefined}
                             placeholder="phantom@gmail.com"
-                            className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:bg-white transition-all shadow-sm"
+                            className={inputClass(!!fieldErrors.email)}
                         />
+                        <FieldError id="email-error" message={fieldErrors.email} />
                     </div>
 
                     {/* SỐ ĐIỆN THOẠI */}
                     <div>
-                        <label className="block text-xs font-black text-slate-800 tracking-wider uppercase mb-2">
-                            SỐ ĐIỆN THOẠI
+                        <label htmlFor="phone" className={LABEL_CLASS}>
+                            Số điện thoại
                         </label>
                         <input
+                            id="phone"
+                            name="phone"
                             type="tel"
+                            inputMode="tel"
                             required
+                            autoComplete="tel"
                             value={phone}
-                            onChange={(e) => setPhone(e.target.value)}
+                            onChange={(e) => {
+                                setPhone(e.target.value);
+                                clearFieldError('phone');
+                            }}
+                            aria-invalid={!!fieldErrors.phone}
+                            aria-describedby={fieldErrors.phone ? 'phone-error' : undefined}
                             placeholder="0886288288"
-                            className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:bg-white transition-all shadow-sm"
+                            className={inputClass(!!fieldErrors.phone)}
                         />
+                        <FieldError id="phone-error" message={fieldErrors.phone} />
                     </div>
 
-                    {/* MẬT KHẨU BÍ MẬT */}
-                    <div>
-                        <label className="block text-xs font-black text-slate-800 tracking-wider uppercase mb-2">
-                            MẬT KHẨU BÍ MẬT
-                        </label>
-                        <div className="relative">
-                            <input
-                                type={showPassword ? 'text' : 'password'}
-                                required
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder="••••••••"
-                                className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 pr-12 text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:bg-white transition-all shadow-sm"
-                            />
-                            <button
-                                type="button"
-                                onClick={() => setShowPassword(!showPassword)}
-                                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-900 p-1"
-                            >
-                                {showPassword ? (
-                                    /* Icon Mắt mở chuẩn */
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                    </svg>
-                                ) : (
-                                    /* Icon Mắt ẩn / gạch chéo chuẩn */
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858-5.908a10.03 10.03 0 012.122-.363c4.478 0 8.268 2.943 9.542 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                    </svg>
-                                )}
-                            </button>
-                        </div>
-                    </div>
+                    {/* MẬT KHẨU */}
+                    <PasswordField
+                        id="password"
+                        label="Mật khẩu bí mật"
+                        value={password}
+                        onChange={(v) => {
+                            setPassword(v);
+                            clearFieldError('password');
+                        }}
+                        show={showPassword}
+                        onToggle={() => setShowPassword((v) => !v)}
+                        error={fieldErrors.password}
+                    />
 
                     {/* XÁC NHẬN MẬT KHẨU */}
-                    <div>
-                        <label className="block text-xs font-black text-slate-800 tracking-wider uppercase mb-2">
-                            XÁC NHẬN MẬT KHẨU
-                        </label>
-                        <div className="relative">
-                            <input
-                                type={showConfirmPassword ? 'text' : 'password'}
-                                required
-                                value={confirmPassword}
-                                onChange={(e) => setConfirmPassword(e.target.value)}
-                                placeholder="••••••••"
-                                className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 pr-12 text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:bg-white transition-all shadow-sm"
-                            />
-                            <button
-                                type="button"
-                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-900 p-1"
-                            >
-                                {showConfirmPassword ? (
-                                    /* Icon Mắt mở chuẩn */
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                    </svg>
-                                ) : (
-                                    /* Icon Mắt ẩn / gạch chéo chuẩn */
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858-5.908a10.03 10.03 0 012.122-.363c4.478 0 8.268 2.943 9.542 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                    </svg>
-                                )}
-                            </button>
-                        </div>
-                    </div>
+                    <PasswordField
+                        id="confirm-password"
+                        label="Xác nhận mật khẩu"
+                        value={confirmPassword}
+                        onChange={(v) => {
+                            setConfirmPassword(v);
+                            clearFieldError('confirmPassword');
+                        }}
+                        show={showConfirmPassword}
+                        onToggle={() => setShowConfirmPassword((v) => !v)}
+                        error={fieldErrors.confirmPassword}
+                    />
 
-                    {/* NÚT TẠO TÀI KHOẢN */}
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-black tracking-wider uppercase py-4 rounded-2xl transition-all shadow-lg shadow-blue-500/25 disabled:opacity-50 mt-2"
+                        className="w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-bold tracking-wider uppercase py-4 rounded-2xl transition-all shadow-lg shadow-blue-500/25 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed mt-2"
                     >
-                        {loading ? 'ĐANG KHỞI TẠO...' : 'TẠO TÀI KHOẢN MỚI'}
+                        {loading ? 'Đang khởi tạo...' : 'Tạo tài khoản mới'}
                     </button>
                 </form>
 
-                {/* Footer chuyển sang trang Đăng nhập */}
-                <p className="text-center text-xs font-bold text-slate-600 mt-8">
+                {/* Chuyển sang trang Đăng nhập */}
+                <p className="text-center text-xs font-semibold text-slate-600 mt-8">
                     Đã có tài khoản danh tính?{' '}
-                    <Link href="/login" className="text-blue-600 font-extrabold hover:underline">
+                    <Link href="/login" className="text-blue-600 font-bold hover:underline">
                         Đăng nhập ngay
                     </Link>
                 </p>
             </div>
-        </div>
+        </main>
     );
 }
