@@ -34,15 +34,13 @@ interface HeroSlide {
     image: string;
 }
 
-// Ẩn thanh cuộn nhưng vẫn cuộn được (không cần khai báo thêm CSS)
 const NO_SCROLLBAR = '[scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden';
 
-const HERO_INTERVAL = 6000; // ms giữa 2 lần tự chuyển banner
-const PRODUCT_AUTOPLAY_INTERVAL = 6000; // ms giữa 2 lần tự cuộn danh sách sản phẩm
-const CARD_WIDTH = 280; // phải khớp với w-[280px] của thẻ sản phẩm
-const CARD_GAP = 16; // phải khớp với gap-4
+const HERO_INTERVAL = 6000;
+const PRODUCT_AUTOPLAY_INTERVAL = 6000;
+const CARD_WIDTH = 280; 
+const CARD_GAP = 16; 
 
-// Ảnh banner nên rộng 1920px trở lên. Có thể thay bằng ảnh riêng: '/images/banners/ten-anh.webp' (đặt trong public/)
 const HERO_SLIDES: HeroSlide[] = [
     {
         id: 1,
@@ -242,7 +240,6 @@ function ChevronIcon({ direction }: { direction: 'left' | 'right' }) {
     );
 }
 
-/* Người dùng bật "giảm chuyển động" trong hệ điều hành thì tắt hiệu ứng tự chạy */
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 
 function usePrefersReducedMotion() {
@@ -252,12 +249,11 @@ function usePrefersReducedMotion() {
             mq.addEventListener('change', onChange);
             return () => mq.removeEventListener('change', onChange);
         },
-        () => window.matchMedia(REDUCED_MOTION_QUERY).matches, // giá trị trên trình duyệt
-        () => false // giá trị khi render trên server
+        () => window.matchMedia(REDUCED_MOTION_QUERY).matches, 
+        () => false
     );
 }
 
-/* Banner chính dạng slider: tự chuyển, có mũi tên, dấu chấm, hiệu ứng zoom nhẹ */
 function HeroSlider() {
     const [current, setCurrent] = useState(0);
     const [paused, setPaused] = useState(false);
@@ -266,7 +262,6 @@ function HeroSlider() {
 
     const goTo = (index: number) => setCurrent((index + count) % count);
 
-    // Dùng setTimeout theo `current` để bấm chuyển tay xong thì đếm lại từ đầu
     useEffect(() => {
         if (paused || reducedMotion) return;
         const timer = setTimeout(() => setCurrent((c) => (c + 1) % count), HERO_INTERVAL);
@@ -286,7 +281,7 @@ function HeroSlider() {
         >
             {HERO_SLIDES.map((slide, i) => {
                 const active = i === current;
-                const Heading = i === 0 ? 'h1' : 'h2'; // chỉ 1 thẻ h1 trên trang (tốt cho SEO)
+                const Heading = i === 0 ? 'h1' : 'h2';
 
                 return (
                     <div
