@@ -163,6 +163,29 @@ export default function HomePage() {
     const scrollRef = useRef<HTMLDivElement>(null);
     const [isHovered, setIsHovered] = useState(false);
 
+    const [user, setUser] = useState<{ username?: string; role?: string } | null>(null);
+
+    useEffect(() => {
+        const storedUser = localStorage.getItem('user');
+        const token = localStorage.getItem('token');
+
+        if (token && storedUser) {
+            try {
+                const parsedUser = JSON.parse(storedUser);
+                queueMicrotask(() => setUser(parsedUser));
+            } catch {
+                queueMicrotask(() => setUser(null));
+            }
+        }
+    }, []);
+
+    const handleLogout = () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        setUser(null);
+        window.location.reload();
+    };
+
     useEffect(() => {
         if (isHovered) return;
         const interval = setInterval(() => {
@@ -208,13 +231,33 @@ export default function HomePage() {
                             )}
                         </Link>
 
-                        <Link href="/login" className="text-sm font-bold text-gray-800 hover:text-blue-600 transition-colors">
-                            Đăng nhập
-                        </Link>
+                        {/* KIỂM TRA TRẠNG THÁI ĐĂNG NHẬP */}
+                        {user ? (
+                            <div className="flex items-center gap-3 bg-gray-50 border border-gray-200 px-3 py-1.5 rounded-full">
+                                <div className="w-7 h-7 rounded-full bg-blue-600 text-white font-bold text-xs flex items-center justify-center uppercase shadow-sm">
+                                    {user.username ? user.username[0] : 'U'}
+                                </div>
+                                <span className="text-xs font-bold text-gray-800">
+                                    {user.username}
+                                </span>
+                                <button
+                                    onClick={handleLogout}
+                                    className="text-[11px] text-red-500 hover:text-red-700 font-bold ml-1 pl-2 border-l border-gray-200"
+                                >
+                                    Đăng xuất
+                                </button>
+                            </div>
+                        ) : (
+                            <>
+                                <Link href="/login" className="text-sm font-bold text-gray-800 hover:text-blue-600 transition-colors">
+                                    Đăng nhập
+                                </Link>
 
-                        <Link href="/register" className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-5 py-2 rounded-xl transition-all shadow-sm">
-                            Đăng ký
-                        </Link>
+                                <Link href="/register" className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-5 py-2 rounded-xl transition-all shadow-sm">
+                                    Đăng ký
+                                </Link>
+                            </>
+                        )}
                     </div>
                 </div>
 
