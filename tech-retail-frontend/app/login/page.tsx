@@ -13,7 +13,7 @@ export default function LoginPage() {
 
     const router = useRouter();
 
-    const handleSubmit = async (e: React.SyntheticEvent) => {
+    const handleLogin = async (e: React.SyntheticEvent) => {
         e.preventDefault();
         setErrorMsg('');
         setLoading(true);
@@ -41,9 +41,14 @@ export default function LoginPage() {
                 if (data.user) {
                     localStorage.setItem('user', JSON.stringify(data.user));
                 }
+
+                // 🚀 QUAN TRỌNG: Phát sự kiện để Trang Chủ / Navbar nhận biết user đã đăng nhập
+                window.dispatchEvent(new Event('userLoginStateChanged'));
             }
 
+            // Chuyển hướng về trang chủ
             router.push('/');
+            router.refresh(); // Refresh lại dữ liệu Server Component nếu có
         } catch (err: unknown) {
             if (err instanceof Error) {
                 setErrorMsg(err.message);
@@ -88,7 +93,7 @@ export default function LoginPage() {
                             </div>
                         )}
 
-                        <form className="space-y-4" onSubmit={handleSubmit}>
+                        <form className="space-y-4" onSubmit={handleLogin}>
                             {/* Ô nhập Email hoặc Số điện thoại */}
                             <div>
                                 <label htmlFor="identifier" className="block text-[11px] font-black text-slate-800 uppercase tracking-wider mb-1">

@@ -179,20 +179,30 @@ export default function HomePage() {
     const [isHovered, setIsHovered] = useState<boolean>(false);
     const [searchQuery, setSearchQuery] = useState<string>('');
 
-    const [user, setUser] = useState<{ username?: string; role?: string } | null>(() => {
-        if (typeof window !== 'undefined') {
+    const [user, setUser] = useState<{ username?: string; role?: string } | null>(null);
+
+    useEffect(() => {
+        const loadUserFromStorage = () => {
             const storedUser = localStorage.getItem('user');
             const token = localStorage.getItem('token');
+
             if (token && storedUser) {
                 try {
-                    return JSON.parse(storedUser);
+                    const parsedUser = JSON.parse(storedUser);
+                    setUser(parsedUser);
                 } catch {
-                    return null;
+                    setUser(null);
                 }
+            } else {
+                setUser(null);
             }
-        }
-        return null;
-    });
+        };
+
+        loadUserFromStorage();
+
+        window.addEventListener('focus', loadUserFromStorage);
+        return () => window.removeEventListener('focus', loadUserFromStorage);
+    }, []);
 
     const handleLogout = () => {
         localStorage.removeItem('token');
@@ -201,7 +211,7 @@ export default function HomePage() {
         router.refresh();
     };
 
-    const handleAddToCart = (_laptop: Laptop) => {
+    const handleAddToCart = (_laptop?: Laptop) => {
         setCartCount((prev) => prev + 1);
     };
 
@@ -295,6 +305,7 @@ export default function HomePage() {
                 </div>
             </header>
 
+            {/* Phần còn lại của JSX giữ nguyên */}
             <section className="max-w-7xl mx-auto px-4 py-6">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-stretch">
                     <div className="lg:col-span-2 relative rounded-2xl overflow-hidden min-h-[320px] bg-slate-950 text-white p-8 flex flex-col justify-between shadow-sm">
