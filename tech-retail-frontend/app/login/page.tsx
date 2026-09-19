@@ -13,50 +13,43 @@ export default function LoginPage() {
 
     const router = useRouter();
 
-    const handleLogin = async (e: React.SyntheticEvent) => {
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setErrorMsg('');
-        setLoading(true);
 
         try {
-            const res = await fetch('/api/Auth/login', {
+            const res = await fetch('http://127.0.0.1:5000/api/Auth/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    usernameOrEmail: identifier,
+                    usernameOrEmail: identifier, 
+                    username: identifier,
                     password: password,
                 }),
             });
 
-            const data = await res.json();
+            const contentType = res.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                const data = await res.json();
 
-            if (!res.ok) {
-                throw new Error(data.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin!');
-            }
+                if (res.ok) {
+                    localStorage.setItem('token', data.token || '');
+                    localStorage.setItem('user', JSON.stringify(data.user || { username: identifier }));
 
-            if (data.token) {
-                localStorage.setItem('token', data.token);
-                if (data.user) {
-                    localStorage.setItem('user', JSON.stringify(data.user));
+                    window.dispatchEvent(new Event('userLoginStateChanged'));
+
+                    router.push('/');
+                } else {
+                    setErrorMsg(data.message || 'Mật khẩu hoặc tài khoản không chính xác!');
                 }
-
-                // 🚀 QUAN TRỌNG: Phát sự kiện để Trang Chủ / Navbar nhận biết user đã đăng nhập
-                window.dispatchEvent(new Event('userLoginStateChanged'));
-            }
-
-            // Chuyển hướng về trang chủ
-            router.push('/');
-            router.refresh(); // Refresh lại dữ liệu Server Component nếu có
-        } catch (err: unknown) {
-            if (err instanceof Error) {
-                setErrorMsg(err.message);
             } else {
-                setErrorMsg('Có lỗi xảy ra, vui lòng thử lại!');
+                setErrorMsg('Không nhận được dữ liệu JSON từ Backend (Kiểm tra lại Backend).');
             }
-        } finally {
-            setLoading(false);
+        } catch (err) {
+            console.error('Lỗi fetch:', err);
+            setErrorMsg('Không thể kết nối đến máy chủ Backend!');
         }
     };
 
@@ -94,7 +87,6 @@ export default function LoginPage() {
                         )}
 
                         <form className="space-y-4" onSubmit={handleLogin}>
-                            {/* Ô nhập Email hoặc Số điện thoại */}
                             <div>
                                 <label htmlFor="identifier" className="block text-[11px] font-black text-slate-800 uppercase tracking-wider mb-1">
                                     Email hoặc Số điện thoại
@@ -111,7 +103,6 @@ export default function LoginPage() {
                                 />
                             </div>
 
-                            {/* Ô nhập Mật khẩu */}
                             <div>
                                 <div className="flex items-center justify-between mb-1">
                                     <label htmlFor="password" className="block text-[11px] font-black text-slate-800 uppercase tracking-wider">
