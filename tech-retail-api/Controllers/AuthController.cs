@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ProductManagementAPI.Models;
 
@@ -17,28 +18,28 @@ namespace ProductManagementAPI.Controllers
         }
 
         [HttpPost("login")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Login([FromBody] LoginDto request)
         {
-            string inputIdentifier = request.UsernameOrEmail ?? request.Username;
+            string identifier = request.UsernameOrEmail?.Trim() ?? string.Empty;
 
-            if (string.IsNullOrWhiteSpace(inputIdentifier) || string.IsNullOrWhiteSpace(request.Password))
+            if (string.IsNullOrWhiteSpace(identifier) || string.IsNullOrWhiteSpace(request.Password))
             {
                 return BadRequest(new { message = "Vui lòng nhập đầy đủ Email/SĐT/Username và Mật khẩu!" });
             }
 
-            inputIdentifier = inputIdentifier.Trim();
-
             var user = await _context.Users.FirstOrDefaultAsync(u =>
-                u.Username == inputIdentifier ||
-                u.Email == inputIdentifier ||
-                u.PhoneNumber == inputIdentifier);
+                u.Username == identifier ||
+                u.Email == identifier ||
+                u.PhoneNumber == identifier);
 
             if (user == null)
             {
                 return BadRequest(new { message = "Tài khoản hoặc mật khẩu không chính xác!" });
             }
 
-            bool isPasswordValid = false;
+            bool isPasswordValid;
 
             if (!string.IsNullOrEmpty(user.PasswordHash) && (user.PasswordHash.StartsWith("$2a$") || user.PasswordHash.StartsWith("$2b$")))
             {
@@ -57,77 +58,110 @@ namespace ProductManagementAPI.Controllers
             return Ok(new
             {
                 token = "mock-jwt-token-123456",
-                username = user.Username,
-                email = user.Email,
-                phoneNumber = user.PhoneNumber,
-                role = user.Role
+                user = new
+                {
+                    username = user.Username,
+                    fullName = user.FullName,
+                    email = user.Email,
+                    phoneNumber = user.PhoneNumber,
+                    role = user.Role
+                }
             });
         }
 
         [HttpPost("register")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Register([FromBody] RegisterDto request)
         {
-            if (request == null || string.IsNullOrWhiteSpace(request.Username) || string.IsNullOrWhiteSpace(request.Password))
+            string email = request.Email?.Trim() ?? string.Empty;
+            string phone = request.PhoneNumber?.Trim() ?? string.Empty;
+
+            if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(phone) || string.IsNullOrWhiteSpace(request.Password))
             {
-                return BadRequest(new { message = "Vui lòng nhập đầy đủ thông tin!" });
+                return BadRequest(new { message = "Vui lòng nhập đầy đủ Email, Số điện thoại và Mật khẩu!" });
             }
 
-            var usernameExists = await _context.Users.AnyAsync(u => u.Username == request.Username.Trim());
-            if (usernameExists)
+            if (!new EmailAddressAttribute().IsValid(email))
             {
-                return BadRequest(new { message = "Tên đăng nhập này đã tồn tại!" });
+                return BadRequest(new { message = "Địa chỉ Email không hợp lệ!" });
             }
 
-            if (!string.IsNullOrWhiteSpace(request.Email))
+            if (request.ConfirmPassword != null && request.ConfirmPassword != request.Password)
             {
-                var emailExists = await _context.Users.AnyAsync(u => u.Email == request.Email.Trim());
-                if (emailExists)
-                {
-                    return BadRequest(new { message = "Địa chỉ Email này đã được đăng ký!" });
-                }
+                return BadRequest(new { message = "Mật khẩu xác nhận không khớp!" });
             }
 
-            if (!string.IsNullOrWhiteSpace(request.PhoneNumber))
+            if (await _context.Users.AnyAsync(u => u.Email == email))
             {
-                var phoneExists = await _context.Users.AnyAsync(u => u.PhoneNumber == request.PhoneNumber.Trim());
-                if (phoneExists)
-                {
-                    return BadRequest(new { message = "Số điện thoại này đã được đăng ký!" });
-                }
+                return BadRequest(new { message = "Địa chỉ Email này đã được đăng ký!" });
             }
 
-            string hashedPassword = BCrypt.Net.BCrypt.HashPassword(request.Password);
+            if (await _context.Users.AnyAsync(u => u.PhoneNumber == phone))
+            {
+                return BadRequest(new { message = "Số điện thoại này đã được đăng ký!" });
+            }
+
+            string username = await GenerateUniqueUsernameAsync(email);
+
+            string passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
 
             var newUser = new User
             {
-                Username = request.Username.Trim(),
-                PasswordHash = hashedPassword,
-                FullName = request.FullName?.Trim() ?? string.Empty,
-                Email = request.Email?.Trim() ?? string.Empty,
-                PhoneNumber = request.PhoneNumber?.Trim() ?? string.Empty,
-                Role = "Customer"
+                Email = email,
+                PhoneNumber = phone,
+                PasswordHash = passwordHash,
+                Username = username,
+                FullName = string.Empty, 
+                Role = "User"
             };
 
             _context.Users.Add(newUser);
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Đăng ký tài khoản thành công!" });
+            return Ok(new
+            {
+                message = "Đăng ký tài khoản thành công!",
+                user = new { newUser.Username, newUser.Email, newUser.PhoneNumber, newUser.Role }
+            });
+        }
+
+        private async Task<string> GenerateUniqueUsernameAsync(string email)
+        {
+            string local = email.Split('@')[0].ToLowerInvariant();
+            string baseName = new string(local
+                .Where(c => (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '.' || c == '_' || c == '-')
+                .ToArray());
+
+            if (string.IsNullOrEmpty(baseName))
+            {
+                baseName = "user";
+            }
+
+            string candidate = baseName;
+            int suffix = 1;
+
+            while (await _context.Users.AnyAsync(u => u.Username == candidate))
+            {
+                candidate = $"{baseName}{suffix}";
+                suffix++;
+            }
+
+            return candidate;
         }
     }
 
     public class LoginDto
     {
         public string UsernameOrEmail { get; set; } = string.Empty;
-        public string Username { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
     }
 
     public class RegisterDto
     {
-        public string Username { get; set; } = string.Empty;
-        public string Password { get; set; } = string.Empty;
-        public string FullName { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string PhoneNumber { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+        public string? ConfirmPassword { get; set; }
     }
 }
