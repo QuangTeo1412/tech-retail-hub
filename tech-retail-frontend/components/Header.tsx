@@ -1,18 +1,18 @@
-﻿'use client';
+﻿// Không cần 'use client': file này chỉ được import từ app/page.tsx (đã là client component).
 
-import { useState } from 'react';
 import Link from 'next/link';
-import { useAuth } from '@/lib/hooks';
-import { NO_SCROLLBAR } from '@/lib/data';
+import { NO_SCROLLBAR } from '../app/lib/data';
+import type { StoredUser } from '../app/lib/hooks';
 
 interface HeaderProps {
+    user: StoredUser | null;
     cartCount: number;
+    searchQuery: string;
+    onSearchChange: (value: string) => void;
+    onLogout: () => void;
 }
 
-export default function Header({ cartCount }: HeaderProps) {
-    const { user, logout } = useAuth();
-    const [searchQuery, setSearchQuery] = useState<string>('');
-
+export default function Header({ user, cartCount, searchQuery, onSearchChange, onLogout }: HeaderProps) {
     return (
         <header className="bg-white border-b border-gray-100 sticky top-0 z-50 shadow-sm">
             <div className="max-w-7xl mx-auto px-4 py-3.5 flex items-center justify-between gap-4">
@@ -24,7 +24,8 @@ export default function Header({ cartCount }: HeaderProps) {
                     <input
                         type="text"
                         value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                        aria-label="Tìm kiếm sản phẩm"
+                        onChange={(e) => onSearchChange(e.target.value)}
                         placeholder="Bạn cần tìm laptop, linh kiện gì hôm nay?..."
                         className="w-full bg-gray-100/80 border border-gray-200 rounded-full py-2.5 pl-5 pr-10 text-sm focus:outline-none focus:bg-white focus:border-blue-500 transition-all placeholder:text-gray-400"
                     />
@@ -48,6 +49,8 @@ export default function Header({ cartCount }: HeaderProps) {
                         {user ? (
                             /* Khi đã đăng nhập -> Hiện Avatar + Name + Logout */
                             <div className="flex items-center gap-3 bg-slate-50 py-1.5 px-3 rounded-full border border-slate-200">
+                                {/* Avatar có thể đến từ nhiều nguồn khác nhau nên dùng <img> thường */}
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img
                                     src={
                                         user.avatar ||
@@ -59,13 +62,14 @@ export default function Header({ cartCount }: HeaderProps) {
                                 />
                                 <span className="text-xs font-bold text-slate-700">{user.username}</span>
                                 <button
-                                    onClick={logout}
+                                    onClick={onLogout}
                                     className="text-xs font-semibold text-red-500 hover:text-red-700 ml-1 transition-colors"
                                 >
                                     Thoát
                                 </button>
                             </div>
                         ) : (
+                            /* Khi chưa đăng nhập -> Hiện cả 2 nút Đăng nhập & Đăng ký */
                             <div className="flex items-center gap-2">
                                 <Link
                                     href="/login"

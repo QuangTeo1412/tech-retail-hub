@@ -1,21 +1,68 @@
-﻿'use client';
+﻿// Không cần 'use client': file này chỉ được import từ app/page.tsx (đã là client component).
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import ChevronIcon from '@/components/ChevronIcon';
-import { usePrefersReducedMotion } from '@/lib/hooks';
-import { FEATURED_LAPTOPS, NO_SCROLLBAR, PRODUCT_AUTOPLAY_INTERVAL, CARD_WIDTH, CARD_GAP, type Laptop } from '@/lib/data';
-import Image from 'next/image';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import ChevronIcon from './ChevronIcon';
+import ProductCard from './ProductCard';
+import { apiFetch, type Product } from '../app/lib/api';
+import { CARD_GAP, CARD_WIDTH, NO_SCROLLBAR, PRODUCT_AUTOPLAY_INTERVAL } from '../app/lib/data';
+import { useDebouncedValue, usePrefersReducedMotion } from '../app/lib/hooks';
 
 interface FeaturedSectionProps {
-    onAddToCart: (laptop: Laptop) => void;
+    searchQuery: string; // từ ô tìm kiếm trên header
+    onAddToCart: (product: Product) => Promise<void>;
 }
 
-export default function FeaturedSection({ onAddToCart }: FeaturedSectionProps) {
+/* Danh sách sản phẩm lấy từ backend: có tìm kiếm, ẩn thanh cuộn, nút mũi tên + dấu chấm, cuộn khớp từng thẻ */
+export default function FeaturedSection({ searchQuery, onAddToCart }: FeaturedSectionProps) {
     const scrollRef = useRef<HTMLDivElement>(null);
     const [paused, setPaused] = useState(false);
     const reducedMotion = usePrefersReducedMotion();
     const [scrollState, setScrollState] = useState({ canPrev: false, canNext: true, page: 0, pageCount: 1 });
+    const [addingId, setAddingId] = useState<number | null>(null);
 
+    // ---- Tải sản phẩm (gõ tìm kiếm thì đợi 0,4 giây rồi mới gọi backend) ----
+    const query = useDebouncedValue(searchQuery.trim(), 400);
+    const [reloadKey, setReloadKey] = useState(0); // tăng lên để tải lại (nút "Thử lại")
+    const requestKey = `${query}#${reloadKey}`;
+    const [result, setResult] = useState<{ key: string; products: Product[]; failed: boolean } | null>(null);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        const params = new URLSearchParams({ pageNumber: '1', pageSize: '12' });
+        if (query) params.set('search', query);
+
+        (async () => {
+            try {
+                const res = await apiFetch<{ data: Product[] }>(`/api/Products?${params.toString()}`, { auth: false });
+                if (!cancelled) {
+                    setResult({ key: requestKey, products: Array.isArray(res.data) ? res.data : [], failed: false });
+                }
+            } catch {
+                if (!cancelled) setResult({ key: requestKey, products: [], failed: true });
+            }
+        })();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [query, requestKey]);
+
+    // Kết quả chỉ hợp lệ khi đúng với lần tìm hiện tại, còn lại coi như đang tải
+    const isCurrent = result !== null && result.key === requestKey;
+    const loadStatus: 'loading' | 'error' | 'ready' = !isCurrent ? 'loading' : result.failed ? 'error' : 'ready';
+    const products = isCurrent && !result.failed ? result.products : [];
+
+    const handleAdd = async (product: Product) => {
+        setAddingId(product.id);
+        try {
+            await onAddToCart(product);
+        } finally {
+            setAddingId(null);
+        }
+    };
+
+    // ---- Cuộn ngang ----
     const updateScrollState = useCallback(() => {
         const el = scrollRef.current;
         if (!el) return;
@@ -32,6 +79,7 @@ export default function FeaturedSection({ onAddToCart }: FeaturedSectionProps) {
         });
     }, []);
 
+    // Đo lại khi danh sách sản phẩm đã tải xong hoặc khi đổi kích thước cửa sổ
     useEffect(() => {
         const frame = requestAnimationFrame(updateScrollState);
         window.addEventListener('resize', updateScrollState);
@@ -39,8 +87,9 @@ export default function FeaturedSection({ onAddToCart }: FeaturedSectionProps) {
             cancelAnimationFrame(frame);
             window.removeEventListener('resize', updateScrollState);
         };
-    }, [updateScrollState]);
+    }, [updateScrollState, products.length]);
 
+    // Bấm mũi tên: cuộn đúng số thẻ đang thấy đầy đủ trên màn hình
     const scrollByPage = (direction: 1 | -1) => {
         const el = scrollRef.current;
         if (!el) return;
@@ -57,8 +106,9 @@ export default function FeaturedSection({ onAddToCart }: FeaturedSectionProps) {
         el.scrollTo({ left: pageCount > 1 ? (index / (pageCount - 1)) * maxScroll : 0, behavior: 'smooth' });
     };
 
+    // Tự cuộn từng thẻ, dừng khi rê chuột / focus / tab bị ẩn / bật "giảm chuyển động"
     useEffect(() => {
-        if (paused || reducedMotion) return;
+        if (paused || reducedMotion || products.length === 0) return;
         const interval = setInterval(() => {
             const el = scrollRef.current;
             if (!el || document.hidden) return;
@@ -70,118 +120,94 @@ export default function FeaturedSection({ onAddToCart }: FeaturedSectionProps) {
             }
         }, PRODUCT_AUTOPLAY_INTERVAL);
         return () => clearInterval(interval);
-    }, [paused, reducedMotion]);
+    }, [paused, reducedMotion, products.length]);
 
     const { canPrev, canNext, page, pageCount } = scrollState;
     const arrowClass =
         'w-9 h-9 rounded-full border border-gray-200 bg-white text-slate-700 flex items-center justify-center transition-colors hover:bg-blue-600 hover:text-white hover:border-blue-600 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-slate-700 disabled:hover:border-gray-200';
 
     return (
-        <section className="max-w-7xl mx-auto px-4 py-6" aria-label="Laptop nổi bật">
+        <section className="max-w-7xl mx-auto px-4 py-6" aria-label="Sản phẩm nổi bật">
             <div className="mb-4 flex items-center justify-between gap-4">
-                <h2 className="text-xl font-extrabold uppercase text-slate-900 tracking-tight">LAPTOP NỔI BẬT</h2>
-                <div className="flex items-center gap-2">
-                    <button type="button" aria-label="Xem sản phẩm trước" disabled={!canPrev} onClick={() => scrollByPage(-1)} className={arrowClass}>
-                        <ChevronIcon direction="left" />
-                    </button>
-                    <button type="button" aria-label="Xem sản phẩm tiếp theo" disabled={!canNext} onClick={() => scrollByPage(1)} className={arrowClass}>
-                        <ChevronIcon direction="right" />
-                    </button>
-                </div>
-            </div>
-
-            <div
-                ref={scrollRef}
-                onScroll={updateScrollState}
-                onMouseEnter={() => setPaused(true)}
-                onMouseLeave={() => setPaused(false)}
-                onFocusCapture={() => setPaused(true)}
-                onBlurCapture={() => setPaused(false)}
-                className={`flex gap-4 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-4 ${NO_SCROLLBAR}`}
-            >
-                {FEATURED_LAPTOPS.map((item) => (
-                    <ProductCard key={item.id} item={item} onAddToCart={onAddToCart} />
-                ))}
-            </div>
-
-            {pageCount > 1 && (
-                <div className="flex justify-center items-center">
-                    {Array.from({ length: pageCount }).map((_, i) => (
-                        <button
-                            key={i}
-                            type="button"
-                            aria-label={`Trang ${i + 1}`}
-                            aria-current={i === page}
-                            onClick={() => scrollToPage(i)}
-                            className="p-1.5"
-                        >
-                            <span
-                                className={`block h-2 rounded-full transition-all duration-300 ${i === page ? 'w-6 bg-blue-600' : 'w-2 bg-gray-300 hover:bg-gray-400'
-                                    }`}
-                            />
+                <h2 className="text-xl font-extrabold uppercase text-slate-900 tracking-tight">
+                    {query ? `KẾT QUẢ CHO “${query}”` : 'SẢN PHẨM NỔI BẬT'}
+                </h2>
+                {loadStatus === 'ready' && products.length > 0 && (
+                    <div className="flex items-center gap-2">
+                        <button type="button" aria-label="Xem sản phẩm trước" disabled={!canPrev} onClick={() => scrollByPage(-1)} className={arrowClass}>
+                            <ChevronIcon direction="left" />
                         </button>
+                        <button type="button" aria-label="Xem sản phẩm tiếp theo" disabled={!canNext} onClick={() => scrollByPage(1)} className={arrowClass}>
+                            <ChevronIcon direction="right" />
+                        </button>
+                    </div>
+                )}
+            </div>
+
+            {loadStatus === 'loading' && (
+                <div className="flex gap-4 overflow-hidden" aria-busy="true" aria-label="Đang tải sản phẩm">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                        <div key={i} className="w-[280px] h-[340px] flex-shrink-0 rounded-2xl bg-white border border-gray-100 animate-pulse" />
                     ))}
                 </div>
             )}
-        </section>
-    );
-}
 
-
-
-interface ProductCardProps {
-    item: Laptop;
-    onAddToCart: (laptop: Laptop) => void;
-}
-
-function ProductCard({ item, onAddToCart }: ProductCardProps) {
-    const isProductPhoto = item.image.startsWith('/');
-
-    return (
-        <div className="w-[280px] flex-shrink-0 snap-start bg-white rounded-2xl p-4 border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col justify-between group">
-            <div>
-                <div
-                    className={`relative h-44 rounded-xl overflow-hidden mb-3 ${isProductPhoto ? 'bg-white border border-gray-100' : 'bg-gray-50'
-                        }`}
-                >
-                    <span className="absolute top-2 left-2 z-10 bg-red-600 text-white text-[9px] font-bold px-2 py-0.5 rounded uppercase">
-                        {item.badge}
-                    </span>
-                    <Image
-                        src={item.image}
-                        alt={item.name}
-                        fill
-                        quality={90}
-                        sizes="280px"
-                        className={`group-hover:scale-105 transition-transform duration-500 ${isProductPhoto ? 'object-contain p-3' : 'object-cover'
-                            }`}
-                    />
+            {loadStatus === 'error' && (
+                <div role="alert" className="bg-white border border-gray-100 rounded-2xl p-8 text-center">
+                    <p className="text-sm text-slate-600">Không tải được danh sách sản phẩm. Vui lòng kiểm tra backend đã chạy chưa.</p>
+                    <button
+                        type="button"
+                        onClick={() => setReloadKey((key) => key + 1)}
+                        className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition-colors"
+                    >
+                        Thử lại
+                    </button>
                 </div>
+            )}
 
-                <h3 className="text-xs font-bold text-slate-800 line-clamp-2 min-h-[32px] group-hover:text-blue-600 transition-colors leading-snug">
-                    {item.name}
-                </h3>
-            </div>
+            {loadStatus === 'ready' && products.length === 0 && (
+                <p className="text-sm text-gray-500">
+                    {query ? `Không tìm thấy sản phẩm nào cho “${query}”.` : 'Chưa có sản phẩm nào.'}
+                </p>
+            )}
 
-            <div className="mt-4">
-                <div className="flex items-baseline justify-between mb-3">
-                    <div>
-                        <span className="text-base font-extrabold text-blue-600 block">{item.price}</span>
-                        <span className="text-[11px] text-gray-400 line-through">{item.oldPrice}</span>
+            {loadStatus === 'ready' && products.length > 0 && (
+                <>
+                    <div
+                        ref={scrollRef}
+                        onScroll={updateScrollState}
+                        onMouseEnter={() => setPaused(true)}
+                        onMouseLeave={() => setPaused(false)}
+                        onFocusCapture={() => setPaused(true)}
+                        onBlurCapture={() => setPaused(false)}
+                        className={`flex gap-4 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-4 ${NO_SCROLLBAR}`}
+                    >
+                        {products.map((item) => (
+                            <ProductCard key={item.id} item={item} adding={addingId === item.id} onAdd={handleAdd} />
+                        ))}
                     </div>
-                    <span className="bg-red-50 text-red-600 text-[10px] font-bold px-1.5 py-0.5 rounded">
-                        {item.discount}
-                    </span>
-                </div>
 
-                <button
-                    type="button"
-                    onClick={() => onAddToCart(item)}
-                    className="w-full bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white font-bold text-xs py-2.5 rounded-xl transition-all"
-                >
-                    Thêm vào giỏ hàng
-                </button>
-            </div>
-        </div>
+                    {pageCount > 1 && (
+                        <div className="flex justify-center items-center">
+                            {Array.from({ length: pageCount }).map((_, i) => (
+                                <button
+                                    key={i}
+                                    type="button"
+                                    aria-label={`Trang ${i + 1}`}
+                                    aria-current={i === page}
+                                    onClick={() => scrollToPage(i)}
+                                    className="p-1.5"
+                                >
+                                    <span
+                                        className={`block h-2 rounded-full transition-all duration-300 ${i === page ? 'w-6 bg-blue-600' : 'w-2 bg-gray-300 hover:bg-gray-400'
+                                            }`}
+                                    />
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </>
+            )}
+        </section>
     );
 }

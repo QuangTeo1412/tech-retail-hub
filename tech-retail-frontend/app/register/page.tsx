@@ -149,7 +149,7 @@ function PasswordField({ id, label, value, onChange, show, onToggle, error }: Pa
                     aria-pressed={show}
                     className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-slate-500 hover:text-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-colors"
                 >
-                    {show ? <EyeSlashIcon /> : <EyeIcon />}
+                    {show ? <EyeIcon /> : <EyeSlashIcon />}
                 </button>
             </div>
             <FieldError id={id} message={error} />

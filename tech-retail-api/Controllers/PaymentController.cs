@@ -88,24 +88,24 @@ namespace ProductManagementAPI.Controllers
         }
 
         [HttpGet("vnpay-return")]
-        public async Task<IActionResult> VnPayReturn([FromQuery] string vnp_ResponseCode, [FromQuery] string vnp_TxnRef)
+        public async Task<IActionResult> VnPayReturn([FromQuery] string? vnp_ResponseCode = null, [FromQuery] string? vnp_TxnRef = null)
         {
             string hashSecret = _config.GetSection("VnPay")["HashSecret"]!;
             if (!IsValidVnPaySignature(Request.Query, hashSecret))
             {
                 _logger.LogWarning("VNPay return: chữ ký không hợp lệ, TxnRef={TxnRef}", vnp_TxnRef);
-                return BadRequest(new { Message = "Chữ ký không hợp lệ." });
+                return RedirectToResult("invalid");
             }
 
-            if (!int.TryParse(vnp_TxnRef.Split('T')[0], out int orderId))
+            if (!int.TryParse((vnp_TxnRef ?? string.Empty).Split('T')[0], out int orderId))
             {
-                return BadRequest(new { Message = "Mã đơn hàng không hợp lệ." });
+                return RedirectToResult("invalid");
             }
 
             var order = await _context.Orders.FindAsync(orderId);
             if (order == null)
             {
-                return NotFound(new { Message = "Không tìm thấy đơn hàng." });
+                return RedirectToResult("invalid");
             }
 
             _logger.LogInformation("VNPay return: đơn {OrderId}, ResponseCode={Code}, trạng thái hiện tại={Status}",
@@ -116,7 +116,7 @@ namespace ProductManagementAPI.Controllers
             {
                 _logger.LogWarning("VNPay return: sai số tiền đơn {OrderId} ({Paid} != {Expected})",
                     orderId, paidAmount, (long)(order.TotalAmount * 100));
-                return BadRequest(new { Message = "Số tiền thanh toán không khớp với đơn hàng." });
+                return RedirectToResult("invalid", orderId);
             }
 
             string transactionStatus = Request.Query["vnp_TransactionStatus"].ToString();
@@ -125,7 +125,7 @@ namespace ProductManagementAPI.Controllers
 
             if (!isSuccess)
             {
-                return BadRequest(new { Message = "Thanh toán thất bại hoặc đã bị hủy." });
+                return RedirectToResult("failed", orderId);
             }
 
             if (order.Status != "Processing")
@@ -142,7 +142,19 @@ namespace ProductManagementAPI.Controllers
                     orderId);
             }
 
-            return Ok(new { Message = $"Thanh toán thành công cho đơn hàng #{orderId}!" });
+            return RedirectToResult("success", orderId);
+        }
+
+        private IActionResult RedirectToResult(string status, int? orderId = null)
+        {
+            string baseUrl = _config.GetSection("VnPay")["FrontendResultUrl"] ?? "http://localhost:3000/payment-result";
+            string url = $"{baseUrl}?status={status}";
+            if (orderId.HasValue)
+            {
+                url += $"&orderId={orderId.Value}";
+            }
+
+            return Redirect(url);
         }
 
         private async Task SendPaymentSuccessEmailAsync(Order order)
