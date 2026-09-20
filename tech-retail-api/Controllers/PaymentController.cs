@@ -1,6 +1,8 @@
 ﻿using System.Net;
+using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ProductManagementAPI.Models;
 using ProductManagementAPI.Services;
@@ -28,16 +30,38 @@ namespace ProductManagementAPI.Controllers
             _logger = logger;
         }
 
+        private int GetUserIdFromToken()
+        {
+            var userIdClaim = User.FindFirst("userId")?.Value
+                              ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            return int.TryParse(userIdClaim, out int userId) ? userId : 0;
+        }
+
+        [Authorize]
         [HttpPost("create-vnpay-url/{orderId}")]
         public async Task<IActionResult> CreatePaymentUrl(int orderId)
         {
+            var userId = GetUserIdFromToken();
+            if (userId == 0) return Unauthorized(new { Message = "Token không hợp lệ hoặc thiếu Id người dùng. Vui lòng đăng nhập lại." });
+
             var order = await _context.Orders.FindAsync(orderId);
-            if (order == null) return NotFound("Không tìm thấy đơn hàng.");
+
+            if (order == null || order.UserId != userId) return NotFound("Không tìm thấy đơn hàng.");
+
+            if (order.Status != "Pending")
+            {
+                return BadRequest(new { Message = $"Đơn hàng #{order.Id} không ở trạng thái chờ thanh toán (hiện tại: {order.Status})." });
+            }
 
             var vnpay = new VnPayLibrary();
             var vnpSection = _config.GetSection("VnPay");
 
             var timeNow = DateTime.UtcNow.AddHours(7);
+
+            int expireMinutes = int.TryParse(vnpSection["ExpireMinutes"], out int m) && m > 0 ? m : 15;
+
+            string txnRef = $"{order.Id}T{timeNow:yyyyMMddHHmmss}";
 
             var remoteIp = HttpContext.Connection.RemoteIpAddress;
             string ipAddr = remoteIp == null || IPAddress.IsLoopback(remoteIp)
@@ -49,14 +73,14 @@ namespace ProductManagementAPI.Controllers
             vnpay.AddRequestData("vnp_TmnCode", vnpSection["TmnCode"]!);
             vnpay.AddRequestData("vnp_Amount", ((long)(order.TotalAmount * 100)).ToString());
             vnpay.AddRequestData("vnp_CreateDate", timeNow.ToString("yyyyMMddHHmmss"));
-            vnpay.AddRequestData("vnp_ExpireDate", timeNow.AddMinutes(15).ToString("yyyyMMddHHmmss"));
+            vnpay.AddRequestData("vnp_ExpireDate", timeNow.AddMinutes(expireMinutes).ToString("yyyyMMddHHmmss"));
             vnpay.AddRequestData("vnp_CurrCode", "VND");
             vnpay.AddRequestData("vnp_IpAddr", ipAddr);
             vnpay.AddRequestData("vnp_Locale", "vn");
             vnpay.AddRequestData("vnp_OrderInfo", $"ThanhToanDonHang{order.Id}");
             vnpay.AddRequestData("vnp_OrderType", "other");
             vnpay.AddRequestData("vnp_ReturnUrl", vnpSection["ReturnUrl"]!);
-            vnpay.AddRequestData("vnp_TxnRef", order.Id.ToString());
+            vnpay.AddRequestData("vnp_TxnRef", txnRef);
 
             string paymentUrl = vnpay.CreateRequestUrl(vnpSection["BaseUrl"]!, vnpSection["HashSecret"]!);
 
@@ -66,6 +90,7 @@ namespace ProductManagementAPI.Controllers
         [HttpGet("vnpay-return")]
         public async Task<IActionResult> VnPayReturn([FromQuery] string vnp_ResponseCode, [FromQuery] string vnp_TxnRef)
         {
+
             string hashSecret = _config.GetSection("VnPay")["HashSecret"]!;
             if (!IsValidVnPaySignature(Request.Query, hashSecret))
             {
@@ -73,7 +98,7 @@ namespace ProductManagementAPI.Controllers
                 return BadRequest(new { Message = "Chữ ký không hợp lệ." });
             }
 
-            if (!int.TryParse(vnp_TxnRef, out int orderId))
+            if (!int.TryParse(vnp_TxnRef.Split('T')[0], out int orderId))
             {
                 return BadRequest(new { Message = "Mã đơn hàng không hợp lệ." });
             }
@@ -84,6 +109,9 @@ namespace ProductManagementAPI.Controllers
                 return NotFound(new { Message = "Không tìm thấy đơn hàng." });
             }
 
+            _logger.LogInformation("VNPay return: đơn {OrderId}, ResponseCode={Code}, trạng thái hiện tại={Status}",
+                orderId, vnp_ResponseCode, order.Status);
+
             string amountText = Request.Query["vnp_Amount"].ToString();
             if (long.TryParse(amountText, out long paidAmount) && paidAmount != (long)(order.TotalAmount * 100))
             {
@@ -92,6 +120,7 @@ namespace ProductManagementAPI.Controllers
                 return BadRequest(new { Message = "Số tiền thanh toán không khớp với đơn hàng." });
             }
 
+            // 3) Thanh toán thành công khi cả mã phản hồi và mã giao dịch đều là "00"
             string transactionStatus = Request.Query["vnp_TransactionStatus"].ToString();
             bool isSuccess = vnp_ResponseCode == "00" &&
                              (string.IsNullOrEmpty(transactionStatus) || transactionStatus == "00");
@@ -108,8 +137,62 @@ namespace ProductManagementAPI.Controllers
 
                 await SendPaymentSuccessEmailAsync(order);
             }
+            else
+            {
+                _logger.LogInformation(
+                    "Đơn {OrderId} đã ở trạng thái Processing từ trước nên không gửi lại email. Hãy thử bằng đơn mới (Pending).",
+                    orderId);
+            }
 
-            return Ok(new { Message = $"Thanh toán thành công cho đơn hàng #{vnp_TxnRef}!" });
+            return Ok(new { Message = $"Thanh toán thành công cho đơn hàng #{orderId}!" });
+        }
+
+        [HttpPost("test-email")]
+        public async Task<IActionResult> TestEmail([FromQuery] string toEmail, [FromServices] IWebHostEnvironment env)
+        {
+            if (!env.IsDevelopment()) return NotFound();
+
+            try
+            {
+                await _emailService.SendOrderConfirmationEmailAsync(toEmail, 0, 1000000);
+                return Ok(new { Message = $"Đã gửi email thử tới {toEmail}. Hãy kiểm tra hộp thư (kể cả thư rác)." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Gửi email thử thất bại.");
+                return StatusCode(500, new { Message = "Gửi email thất bại.", Error = ex.Message, Type = ex.GetType().Name });
+            }
+        }
+
+        [HttpPost("test-order-email/{orderId}")]
+        public async Task<IActionResult> TestOrderEmail(int orderId, [FromServices] IWebHostEnvironment env)
+        {
+            if (!env.IsDevelopment()) return NotFound();
+
+            var order = await _context.Orders.FindAsync(orderId);
+            if (order == null) return NotFound(new { Message = "Không tìm thấy đơn hàng." });
+
+            var user = await _context.Users.FindAsync(order.UserId);
+            if (user == null)
+            {
+                return NotFound(new { Message = $"Không tìm thấy người dùng có Id = {order.UserId} của đơn này." });
+            }
+
+            if (string.IsNullOrWhiteSpace(user.Email))
+            {
+                return BadRequest(new { Message = $"Người dùng '{user.Username}' chưa có email trong bảng Users nên không có nơi để gửi.", UserId = user.Id });
+            }
+
+            try
+            {
+                await _emailService.SendOrderConfirmationEmailAsync(user.Email, order.Id, order.TotalAmount);
+                return Ok(new { Message = "Đã gửi email.", SentTo = user.Email, Username = user.Username });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Gửi lại email đơn {OrderId} thất bại.", orderId);
+                return StatusCode(500, new { Message = "Gửi email thất bại.", SentTo = user.Email, Error = ex.Message, Type = ex.GetType().Name });
+            }
         }
 
         private async Task SendPaymentSuccessEmailAsync(Order order)
@@ -124,6 +207,7 @@ namespace ProductManagementAPI.Controllers
                 }
 
                 await _emailService.SendOrderConfirmationEmailAsync(user.Email, order.Id, order.TotalAmount);
+                _logger.LogInformation("Đã gửi email xác nhận đơn {OrderId} tới {Email}.", order.Id, user.Email);
             }
             catch (Exception ex)
             {

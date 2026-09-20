@@ -14,16 +14,19 @@ namespace ProductManagementAPI.Controllers
     {
         private readonly AppDbContext _context;
         private readonly IEmailService _emailService;
+        private readonly ILogger<OrderController> _logger;
 
-        public OrderController(AppDbContext context, IEmailService emailService)
+        public OrderController(AppDbContext context, IEmailService emailService, ILogger<OrderController> logger)
         {
             _context = context;
             _emailService = emailService;
+            _logger = logger;
         }
 
         private int GetUserIdFromToken()
         {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            var userIdClaim = User.FindFirst("userId")?.Value
+                              ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value
                               ?? User.FindFirst("id")?.Value
                               ?? User.FindFirst("sub")?.Value;
             return int.TryParse(userIdClaim, out int userId) ? userId : 0;
@@ -33,6 +36,8 @@ namespace ProductManagementAPI.Controllers
         public async Task<IActionResult> Checkout()
         {
             var userId = GetUserIdFromToken();
+            if (userId == 0)
+                return Unauthorized(new { Message = "Token không hợp lệ hoặc thiếu Id người dùng. Vui lòng đăng nhập lại." });
 
             var cartItems = await _context.CartItems
                 .Include(c => c.Product)
@@ -78,18 +83,38 @@ namespace ProductManagementAPI.Controllers
             await _context.SaveChangesAsync();
 
             var user = await _context.Users.FindAsync(userId);
-            if (user != null)
+            if (user != null && !string.IsNullOrWhiteSpace(user.Email))
             {
-                _ = _emailService.SendOrderConfirmationEmailAsync("tranphanvietquang@gmail.com", order.Id, order.TotalAmount);
+                _ = SendConfirmationEmailAsync(user.Email, order.Id, order.TotalAmount);
+            }
+            else
+            {
+                _logger.LogWarning("Đơn {OrderId}: người dùng {UserId} chưa có email nên không gửi thư xác nhận.", order.Id, userId);
             }
 
             return Ok(new { Message = "Đặt hàng thành công!", OrderId = order.Id, Total = order.TotalAmount });
+        }
+
+        private async Task SendConfirmationEmailAsync(string toEmail, int orderId, decimal totalAmount)
+        {
+            try
+            {
+                await _emailService.SendOrderConfirmationEmailAsync(toEmail, orderId, totalAmount);
+                _logger.LogInformation("Đã gửi thư xác nhận đặt hàng #{OrderId} tới {Email}.", orderId, toEmail);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Gửi thư xác nhận đặt hàng #{OrderId} thất bại.", orderId);
+            }
         }
 
         [HttpGet("my-orders")]
         public async Task<IActionResult> GetMyOrders()
         {
             var userId = GetUserIdFromToken();
+            if (userId == 0)
+                return Unauthorized(new { Message = "Token không hợp lệ hoặc thiếu Id người dùng. Vui lòng đăng nhập lại." });
+
             var orders = await _context.Orders
                 .Include(o => o.OrderItems)
                 .ThenInclude(oi => oi.Product)
