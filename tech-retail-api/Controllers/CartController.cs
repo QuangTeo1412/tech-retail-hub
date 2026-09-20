@@ -8,7 +8,7 @@ namespace ProductManagementAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize] 
+    [Authorize]
     public class CartController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -20,7 +20,8 @@ namespace ProductManagementAPI.Controllers
 
         private int GetUserIdFromToken()
         {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            var userIdClaim = User.FindFirst("userId")?.Value
+                              ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value
                               ?? User.FindFirst("id")?.Value
                               ?? User.FindFirst("sub")?.Value;
 
@@ -36,6 +37,8 @@ namespace ProductManagementAPI.Controllers
         public async Task<IActionResult> GetCart()
         {
             var userId = GetUserIdFromToken();
+            if (userId == 0) return Unauthorized(new { message = "Token không hợp lệ hoặc thiếu Id người dùng. Vui lòng đăng nhập lại." });
+
             var cartItems = await _context.CartItems
                 .Include(c => c.Product)
                 .Where(c => c.UserId == userId)
@@ -57,6 +60,9 @@ namespace ProductManagementAPI.Controllers
         public async Task<IActionResult> AddToCart(int productId, int quantity = 1)
         {
             var userId = GetUserIdFromToken();
+            if (userId == 0) return Unauthorized(new { message = "Token không hợp lệ hoặc thiếu Id người dùng. Vui lòng đăng nhập lại." });
+
+            if (quantity < 1) return BadRequest(new { message = "Số lượng phải từ 1 trở lên." });
 
             var product = await _context.Products.FindAsync(productId);
             if (product == null) return NotFound("Sản phẩm không tồn tại.");
@@ -87,6 +93,8 @@ namespace ProductManagementAPI.Controllers
         public async Task<IActionResult> RemoveFromCart(int id)
         {
             var userId = GetUserIdFromToken();
+            if (userId == 0) return Unauthorized(new { message = "Token không hợp lệ hoặc thiếu Id người dùng. Vui lòng đăng nhập lại." });
+
             var cartItem = await _context.CartItems
                 .FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId);
 

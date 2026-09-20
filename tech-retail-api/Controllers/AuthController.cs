@@ -68,6 +68,7 @@ namespace ProductManagementAPI.Controllers
                 token = jwtToken,
                 user = new
                 {
+                    id = user.Id,
                     username = user.Username,
                     fullName = user.FullName,
                     email = user.Email,
@@ -79,7 +80,10 @@ namespace ProductManagementAPI.Controllers
 
         private string GenerateJwtToken(User user)
         {
-            var secretKey = _configuration["JwtSettings:SecretKey"] ?? "DefaultFallbackSecretKeyMustBeLongEnough12345!";
+
+            var secretKey = _configuration["JwtSettings:SecretKey"]
+                         ?? _configuration["AppSettings:Token"]
+                         ?? "DefaultFallbackSecretKeyMustBeLongEnough12345!";
             var issuer = _configuration["JwtSettings:Issuer"] ?? "ProductManagementAPI";
             var audience = _configuration["JwtSettings:Audience"] ?? "ProductManagementClient";
             var expireMinutes = double.TryParse(_configuration["JwtSettings:ExpireMinutes"], out var mins) ? mins : 60;
@@ -89,7 +93,11 @@ namespace ProductManagementAPI.Controllers
 
             var claims = new[]
             {
-                new Claim(JwtRegisteredClaimNames.Sub, user.Username ?? user.Email ?? "user"),
+                new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim("userId", user.Id.ToString()),
+
                 new Claim(ClaimTypes.Name, user.Username ?? string.Empty),
                 new Claim(ClaimTypes.Email, user.Email ?? string.Empty),
                 new Claim(ClaimTypes.Role, user.Role ?? "User")
