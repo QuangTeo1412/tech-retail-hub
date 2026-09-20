@@ -90,7 +90,6 @@ namespace ProductManagementAPI.Controllers
         [HttpGet("vnpay-return")]
         public async Task<IActionResult> VnPayReturn([FromQuery] string vnp_ResponseCode, [FromQuery] string vnp_TxnRef)
         {
-
             string hashSecret = _config.GetSection("VnPay")["HashSecret"]!;
             if (!IsValidVnPaySignature(Request.Query, hashSecret))
             {
@@ -120,7 +119,6 @@ namespace ProductManagementAPI.Controllers
                 return BadRequest(new { Message = "Số tiền thanh toán không khớp với đơn hàng." });
             }
 
-            // 3) Thanh toán thành công khi cả mã phản hồi và mã giao dịch đều là "00"
             string transactionStatus = Request.Query["vnp_TransactionStatus"].ToString();
             bool isSuccess = vnp_ResponseCode == "00" &&
                              (string.IsNullOrEmpty(transactionStatus) || transactionStatus == "00");
@@ -147,54 +145,6 @@ namespace ProductManagementAPI.Controllers
             return Ok(new { Message = $"Thanh toán thành công cho đơn hàng #{orderId}!" });
         }
 
-        [HttpPost("test-email")]
-        public async Task<IActionResult> TestEmail([FromQuery] string toEmail, [FromServices] IWebHostEnvironment env)
-        {
-            if (!env.IsDevelopment()) return NotFound();
-
-            try
-            {
-                await _emailService.SendOrderConfirmationEmailAsync(toEmail, 0, 1000000);
-                return Ok(new { Message = $"Đã gửi email thử tới {toEmail}. Hãy kiểm tra hộp thư (kể cả thư rác)." });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Gửi email thử thất bại.");
-                return StatusCode(500, new { Message = "Gửi email thất bại.", Error = ex.Message, Type = ex.GetType().Name });
-            }
-        }
-
-        [HttpPost("test-order-email/{orderId}")]
-        public async Task<IActionResult> TestOrderEmail(int orderId, [FromServices] IWebHostEnvironment env)
-        {
-            if (!env.IsDevelopment()) return NotFound();
-
-            var order = await _context.Orders.FindAsync(orderId);
-            if (order == null) return NotFound(new { Message = "Không tìm thấy đơn hàng." });
-
-            var user = await _context.Users.FindAsync(order.UserId);
-            if (user == null)
-            {
-                return NotFound(new { Message = $"Không tìm thấy người dùng có Id = {order.UserId} của đơn này." });
-            }
-
-            if (string.IsNullOrWhiteSpace(user.Email))
-            {
-                return BadRequest(new { Message = $"Người dùng '{user.Username}' chưa có email trong bảng Users nên không có nơi để gửi.", UserId = user.Id });
-            }
-
-            try
-            {
-                await _emailService.SendOrderConfirmationEmailAsync(user.Email, order.Id, order.TotalAmount);
-                return Ok(new { Message = "Đã gửi email.", SentTo = user.Email, Username = user.Username });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Gửi lại email đơn {OrderId} thất bại.", orderId);
-                return StatusCode(500, new { Message = "Gửi email thất bại.", SentTo = user.Email, Error = ex.Message, Type = ex.GetType().Name });
-            }
-        }
-
         private async Task SendPaymentSuccessEmailAsync(Order order)
         {
             try
@@ -206,7 +156,7 @@ namespace ProductManagementAPI.Controllers
                     return;
                 }
 
-                await _emailService.SendOrderConfirmationEmailAsync(user.Email, order.Id, order.TotalAmount);
+                await _emailService.SendPaymentSuccessEmailAsync(user.Email, order.Id, order.TotalAmount);
                 _logger.LogInformation("Đã gửi email xác nhận đơn {OrderId} tới {Email}.", order.Id, user.Email);
             }
             catch (Exception ex)
