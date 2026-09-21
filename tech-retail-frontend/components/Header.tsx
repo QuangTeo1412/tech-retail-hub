@@ -1,6 +1,4 @@
-﻿// Không cần 'use client': file này chỉ được import từ app/page.tsx (đã là client component).
-
-import Link from 'next/link';
+﻿import Link from 'next/link';
 import { NO_SCROLLBAR } from '../app/lib/data';
 import type { StoredUser } from '../app/lib/hooks';
 
@@ -47,7 +45,6 @@ export default function Header({ user, cartCount, searchQuery, onSearchChange, o
                     {/* Góc phải thanh Header / Navbar */}
                     <div className="flex items-center gap-4">
                         {user ? (
-                            /* Khi đã đăng nhập -> Hiện Avatar + Name + Logout */
                             <div className="flex items-center gap-3 bg-slate-50 py-1.5 px-3 rounded-full border border-slate-200">
                                 {/* Avatar có thể đến từ nhiều nguồn khác nhau nên dùng <img> thường */}
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -69,7 +66,6 @@ export default function Header({ user, cartCount, searchQuery, onSearchChange, o
                                 </button>
                             </div>
                         ) : (
-                            /* Khi chưa đăng nhập -> Hiện cả 2 nút Đăng nhập & Đăng ký */
                             <div className="flex items-center gap-2">
                                 <Link
                                     href="/login"

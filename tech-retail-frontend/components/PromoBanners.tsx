@@ -1,7 +1,6 @@
 ﻿import Image from 'next/image';
 import Link from 'next/link';
 
-/* Hai banner nhỏ bên phải banner chính */
 export default function PromoBanners() {
     return (
         <div className="flex flex-col gap-4">

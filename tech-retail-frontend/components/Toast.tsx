@@ -1,6 +1,5 @@
 ﻿import type { ToastState } from '../app/lib/hooks';
 
-/* Thông báo nhỏ ở góc dưới bên phải (ví dụ: "Đã thêm vào giỏ hàng!"). role="status" đã tự đọc thông báo cho trình đọc màn hình */
 export default function Toast({ toast }: { toast: ToastState | null }) {
     if (!toast) return null;
 

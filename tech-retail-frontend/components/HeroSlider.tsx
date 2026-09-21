@@ -7,7 +7,6 @@ import ChevronIcon from './ChevronIcon';
 import { HERO_INTERVAL, HERO_SLIDES } from '../app/lib/data';
 import { usePrefersReducedMotion } from '../app/lib/hooks';
 
-/* Banner chính dạng slider: tự chuyển, có mũi tên, dấu chấm, hiệu ứng zoom nhẹ */
 export default function HeroSlider() {
     const [current, setCurrent] = useState(0);
     const [paused, setPaused] = useState(false);
@@ -16,7 +15,6 @@ export default function HeroSlider() {
 
     const goTo = (index: number) => setCurrent((index + count) % count);
 
-    // Dùng setTimeout theo `current` để bấm chuyển tay xong thì đếm lại từ đầu
     useEffect(() => {
         if (paused || reducedMotion) return;
         const timer = setTimeout(() => setCurrent((c) => (c + 1) % count), HERO_INTERVAL);
@@ -36,7 +34,7 @@ export default function HeroSlider() {
         >
             {HERO_SLIDES.map((slide, i) => {
                 const active = i === current;
-                const Heading = i === 0 ? 'h1' : 'h2'; // chỉ 1 thẻ h1 trên trang (tốt cho SEO)
+                const Heading = i === 0 ? 'h1' : 'h2';
 
                 return (
                     <div

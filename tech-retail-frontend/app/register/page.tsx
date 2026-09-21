@@ -11,7 +11,7 @@ const beVietnam = Be_Vietnam_Pro({
     display: 'swap',
 });
 
-const MIN_PASSWORD_LENGTH = 8; // chỉnh cho khớp với rule của backend
+const MIN_PASSWORD_LENGTH = 8;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_REGEX = /^(0|\+84)\d{9}$/;
 
@@ -25,7 +25,6 @@ const LABEL_CLASS = 'block text-xs font-bold text-slate-800 tracking-wider upper
 type FieldName = 'email' | 'phone' | 'password' | 'confirmPassword';
 type FieldErrors = Partial<Record<FieldName, string>>;
 
-// Thứ tự hiển thị trên form, dùng để focus vào ô lỗi đầu tiên
 const FIELD_ORDER: FieldName[] = ['email', 'phone', 'password', 'confirmPassword'];
 
 function EyeIcon() {
@@ -192,7 +191,6 @@ export default function RegisterPage() {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
-    // Cập nhật giá trị và xoá lỗi của đúng ô đang gõ
     const setField = (name: FieldName) => (value: string) => {
         setValues((prev) => ({ ...prev, [name]: value }));
         setFieldErrors((prev) => (prev[name] ? { ...prev, [name]: undefined } : prev));

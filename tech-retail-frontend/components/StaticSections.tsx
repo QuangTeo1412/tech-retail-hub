@@ -1,5 +1,4 @@
-﻿/* Khối thông tin ưu điểm dịch vụ (giao hàng, bảo hành, trả góp, hỗ trợ) */
-export default function StaticSections() {
+﻿export default function StaticSections() {
     return (
         <section className="max-w-7xl mx-auto px-4 py-8 border-t border-gray-200/80 mt-6">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">

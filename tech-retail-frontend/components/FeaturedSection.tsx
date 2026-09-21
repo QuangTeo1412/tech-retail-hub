@@ -1,6 +1,4 @@
-﻿// Không cần 'use client': file này chỉ được import từ app/page.tsx (đã là client component).
-
-import { useCallback, useEffect, useRef, useState } from 'react';
+﻿import { useCallback, useEffect, useRef, useState } from 'react';
 import ChevronIcon from './ChevronIcon';
 import ProductCard from './ProductCard';
 import { apiFetch, type Product } from '../app/lib/api';
@@ -8,11 +6,10 @@ import { CARD_GAP, CARD_WIDTH, NO_SCROLLBAR, PRODUCT_AUTOPLAY_INTERVAL } from '.
 import { useDebouncedValue, usePrefersReducedMotion } from '../app/lib/hooks';
 
 interface FeaturedSectionProps {
-    searchQuery: string; // từ ô tìm kiếm trên header
+    searchQuery: string;
     onAddToCart: (product: Product) => Promise<void>;
 }
 
-/* Danh sách sản phẩm lấy từ backend: có tìm kiếm, ẩn thanh cuộn, nút mũi tên + dấu chấm, cuộn khớp từng thẻ */
 export default function FeaturedSection({ searchQuery, onAddToCart }: FeaturedSectionProps) {
     const scrollRef = useRef<HTMLDivElement>(null);
     const [paused, setPaused] = useState(false);
@@ -20,9 +17,8 @@ export default function FeaturedSection({ searchQuery, onAddToCart }: FeaturedSe
     const [scrollState, setScrollState] = useState({ canPrev: false, canNext: true, page: 0, pageCount: 1 });
     const [addingId, setAddingId] = useState<number | null>(null);
 
-    // ---- Tải sản phẩm (gõ tìm kiếm thì đợi 0,4 giây rồi mới gọi backend) ----
     const query = useDebouncedValue(searchQuery.trim(), 400);
-    const [reloadKey, setReloadKey] = useState(0); // tăng lên để tải lại (nút "Thử lại")
+    const [reloadKey, setReloadKey] = useState(0);
     const requestKey = `${query}#${reloadKey}`;
     const [result, setResult] = useState<{ key: string; products: Product[]; failed: boolean } | null>(null);
 
@@ -48,7 +44,6 @@ export default function FeaturedSection({ searchQuery, onAddToCart }: FeaturedSe
         };
     }, [query, requestKey]);
 
-    // Kết quả chỉ hợp lệ khi đúng với lần tìm hiện tại, còn lại coi như đang tải
     const isCurrent = result !== null && result.key === requestKey;
     const loadStatus: 'loading' | 'error' | 'ready' = !isCurrent ? 'loading' : result.failed ? 'error' : 'ready';
     const products = isCurrent && !result.failed ? result.products : [];
@@ -62,7 +57,6 @@ export default function FeaturedSection({ searchQuery, onAddToCart }: FeaturedSe
         }
     };
 
-    // ---- Cuộn ngang ----
     const updateScrollState = useCallback(() => {
         const el = scrollRef.current;
         if (!el) return;
@@ -79,7 +73,6 @@ export default function FeaturedSection({ searchQuery, onAddToCart }: FeaturedSe
         });
     }, []);
 
-    // Đo lại khi danh sách sản phẩm đã tải xong hoặc khi đổi kích thước cửa sổ
     useEffect(() => {
         const frame = requestAnimationFrame(updateScrollState);
         window.addEventListener('resize', updateScrollState);
@@ -89,7 +82,6 @@ export default function FeaturedSection({ searchQuery, onAddToCart }: FeaturedSe
         };
     }, [updateScrollState, products.length]);
 
-    // Bấm mũi tên: cuộn đúng số thẻ đang thấy đầy đủ trên màn hình
     const scrollByPage = (direction: 1 | -1) => {
         const el = scrollRef.current;
         if (!el) return;
@@ -106,7 +98,6 @@ export default function FeaturedSection({ searchQuery, onAddToCart }: FeaturedSe
         el.scrollTo({ left: pageCount > 1 ? (index / (pageCount - 1)) * maxScroll : 0, behavior: 'smooth' });
     };
 
-    // Tự cuộn từng thẻ, dừng khi rê chuột / focus / tab bị ẩn / bật "giảm chuyển động"
     useEffect(() => {
         if (paused || reducedMotion || products.length === 0) return;
         const interval = setInterval(() => {

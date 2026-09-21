@@ -20,7 +20,7 @@ export default function HomePage() {
     const { toast, showToast } = useToast();
 
     const handleLogout = () => {
-        clearSession(); // xóa token + user và báo cho các thành phần khác cập nhật
+        clearSession();
         setCartCount(0);
         router.refresh();
     };

@@ -1,6 +1,4 @@
-﻿// Không cần 'use client': file này chỉ được import từ app/page.tsx (đã là client component).
-
-import { formatVnd, resolveImageUrl, type Product } from '../app/lib/api';
+﻿import { formatVnd, resolveImageUrl, type Product } from '../app/lib/api';
 
 export default function ProductCard({
     item,
@@ -26,8 +24,7 @@ export default function ProductCard({
                         </span>
                     )}
                     {image ? (
-                        // Ảnh từ backend: dùng <img> thường để không phải khai báo domain trong next.config
-                        // eslint-disable-next-line @next/next/no-img-element
+
                         <img
                             src={image}
                             alt={item.name}
