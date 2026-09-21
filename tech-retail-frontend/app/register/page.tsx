@@ -241,9 +241,13 @@ export default function RegisterPage() {
 
     return (
         <main
-            className={`${beVietnam.className} min-h-screen bg-slate-900 flex items-center justify-center p-4 antialiased`}
+            className={`${beVietnam.className} min-h-screen bg-cover bg-center bg-no-repeat flex items-center justify-center p-4 antialiased relative overflow-hidden`}
+            style={{ backgroundImage: "url('/images/kaito-register-bg.jpg')" }}
         >
-            <div className="max-w-md w-full bg-white rounded-3xl p-8 shadow-2xl border border-slate-100">
+            {/* Lớp overlay tối mờ giúp card trắng và chữ nổi bật trên ảnh nền */}
+            <div className="absolute inset-0 bg-black/40 z-0"></div>
+
+            <div className="max-w-md w-full bg-white rounded-3xl p-8 shadow-2xl border border-slate-100 relative z-10">
                 {/* Header */}
                 <header className="text-center mb-8">
                     <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight uppercase mb-1.5">
