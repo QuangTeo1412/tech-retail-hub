@@ -241,93 +241,98 @@ export default function RegisterPage() {
 
     return (
         <main
-            className={`${beVietnam.className} min-h-screen bg-cover bg-center bg-no-repeat flex items-center justify-center p-4 antialiased relative overflow-hidden`}
-            style={{ backgroundImage: "url('/images/kaito-register-bg.jpg')" }}
+            className={`${beVietnam.className} min-h-screen bg-slate-900 flex items-center justify-center p-4 antialiased`}
         >
-            {/* Lớp overlay tối mờ giúp card trắng và chữ nổi bật trên ảnh nền */}
-            <div className="absolute inset-0 bg-black/40 z-0"></div>
+            {/* Khuôn card trắng bo góc, bọc overflow-hidden để ôm ảnh Kaito lọt vào trong */}
+            <div className="max-w-md w-full bg-white rounded-3xl p-8 shadow-2xl border border-slate-100 relative overflow-hidden">
+                {/* Ảnh Kaito lọt vào bên trong card (watermark mờ góc/nền card) */}
+                <div
+                    className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-15 pointer-events-none"
+                    style={{ backgroundImage: "url('/images/kaito-kid-bg-register.jpg')" }}
+                />
+                {/* Lớp nội dung form nổi lên trên ảnh nền card (z-10) */}
+                <div className="relative z-10">
+                    {/* Header */}
+                    <header className="text-center mb-8">
+                        <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight uppercase mb-1.5">
+                            Thẻ đăng ký danh tính
+                        </h1>
+                        <p className="text-sm font-semibold text-slate-600">
+                            Gia nhập liên minh công nghệ KAITO STORE
+                        </p>
+                    </header>
 
-            <div className="max-w-md w-full bg-white rounded-3xl p-8 shadow-2xl border border-slate-100 relative z-10">
-                {/* Header */}
-                <header className="text-center mb-8">
-                    <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight uppercase mb-1.5">
-                        Thẻ đăng ký danh tính
-                    </h1>
-                    <p className="text-sm font-semibold text-slate-600">
-                        Gia nhập liên minh công nghệ KAITO STORE
+                    {/* Lỗi từ server */}
+                    {error && (
+                        <div
+                            role="alert"
+                            className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 text-xs rounded-xl font-semibold text-center"
+                        >
+                            {error}
+                        </div>
+                    )}
+
+                    {/* Form */}
+                    <form onSubmit={handleRegister} noValidate className="space-y-5">
+                        <TextField
+                            id="email"
+                            label="Địa chỉ email"
+                            type="email"
+                            autoComplete="email"
+                            placeholder="phantom@gmail.com"
+                            value={values.email}
+                            onChange={setField('email')}
+                            error={fieldErrors.email}
+                        />
+
+                        <TextField
+                            id="phone"
+                            label="Số điện thoại"
+                            type="tel"
+                            autoComplete="tel"
+                            placeholder="0886288288"
+                            value={values.phone}
+                            onChange={setField('phone')}
+                            error={fieldErrors.phone}
+                        />
+
+                        <PasswordField
+                            id="password"
+                            label="Mật khẩu bí mật"
+                            value={values.password}
+                            onChange={setField('password')}
+                            show={showPassword}
+                            onToggle={() => setShowPassword((v) => !v)}
+                            error={fieldErrors.password}
+                        />
+
+                        <PasswordField
+                            id="confirmPassword"
+                            label="Xác nhận mật khẩu"
+                            value={values.confirmPassword}
+                            onChange={setField('confirmPassword')}
+                            show={showConfirmPassword}
+                            onToggle={() => setShowConfirmPassword((v) => !v)}
+                            error={fieldErrors.confirmPassword}
+                        />
+
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-bold tracking-wider uppercase py-4 rounded-2xl transition-all shadow-lg shadow-blue-500/25 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+                        >
+                            {loading ? 'Đang khởi tạo...' : 'Tạo tài khoản mới'}
+                        </button>
+                    </form>
+
+                    {/* Chuyển sang trang Đăng nhập */}
+                    <p className="text-center text-xs font-semibold text-slate-600 mt-8">
+                        Đã có tài khoản danh tính?{' '}
+                        <Link href="/login" className="text-blue-600 font-bold hover:underline">
+                            Đăng nhập ngay
+                        </Link>
                     </p>
-                </header>
-
-                {/* Lỗi từ server (sai thông tin, email đã tồn tại, mất kết nối...) */}
-                {error && (
-                    <div
-                        role="alert"
-                        className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 text-xs rounded-xl font-semibold text-center"
-                    >
-                        {error}
-                    </div>
-                )}
-
-                {/* noValidate: tắt tooltip mặc định của trình duyệt, dùng lỗi tự hiển thị bên dưới từng ô */}
-                <form onSubmit={handleRegister} noValidate className="space-y-5">
-                    <TextField
-                        id="email"
-                        label="Địa chỉ email"
-                        type="email"
-                        autoComplete="email"
-                        placeholder="phantom@gmail.com"
-                        value={values.email}
-                        onChange={setField('email')}
-                        error={fieldErrors.email}
-                    />
-
-                    <TextField
-                        id="phone"
-                        label="Số điện thoại"
-                        type="tel"
-                        autoComplete="tel"
-                        placeholder="0886288288"
-                        value={values.phone}
-                        onChange={setField('phone')}
-                        error={fieldErrors.phone}
-                    />
-
-                    <PasswordField
-                        id="password"
-                        label="Mật khẩu bí mật"
-                        value={values.password}
-                        onChange={setField('password')}
-                        show={showPassword}
-                        onToggle={() => setShowPassword((v) => !v)}
-                        error={fieldErrors.password}
-                    />
-
-                    <PasswordField
-                        id="confirmPassword"
-                        label="Xác nhận mật khẩu"
-                        value={values.confirmPassword}
-                        onChange={setField('confirmPassword')}
-                        show={showConfirmPassword}
-                        onToggle={() => setShowConfirmPassword((v) => !v)}
-                        error={fieldErrors.confirmPassword}
-                    />
-
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-bold tracking-wider uppercase py-4 rounded-2xl transition-all shadow-lg shadow-blue-500/25 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed mt-2"
-                    >
-                        {loading ? 'Đang khởi tạo...' : 'Tạo tài khoản mới'}
-                    </button>
-                </form>
-
-                {/* Chuyển sang trang Đăng nhập */}
-                <p className="text-center text-xs font-semibold text-slate-600 mt-8">
-                    Đã có tài khoản danh tính?{' '}
-                    <Link href="/login" className="text-blue-600 font-bold hover:underline">
-                        Đăng nhập ngay
-                    </Link>
-                </p>
+                </div>
             </div>
         </main>
     );
