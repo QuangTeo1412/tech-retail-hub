@@ -1,0 +1,38 @@
+name: CI/CD Pipeline Check
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-and-lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js (for Next.js frontend)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install & Build Frontend
+        working-directory: ./tech-retail-frontend
+        run: |
+          npm install
+          npm run build
+
+      - name: Setup .NET 8 (for Backend)
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore & Build Backend
+        working-directory: ./tech-retail-api
+        run: |
+          dotnet restore
+          dotnet build --no-restore
