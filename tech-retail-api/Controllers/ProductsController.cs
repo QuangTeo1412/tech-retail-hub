@@ -1,4 +1,4 @@
-﻿    using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ProductManagementAPI.Models;
@@ -22,20 +22,17 @@ namespace ProductManagementAPI.Controllers
         {
             var query = _context.Products.AsQueryable();
 
-            // 1. Tìm kiếm theo tên
             if (!string.IsNullOrWhiteSpace(productParams.Search))
             {
                 var searchLower = productParams.Search.ToLower();
                 query = query.Where(p => p.Name.ToLower().Contains(searchLower));
             }
 
-            // 2. Lọc theo Danh mục
             if (!string.IsNullOrWhiteSpace(productParams.Category))
             {
                 query = query.Where(p => p.Category == productParams.Category);
             }
 
-            // 3. Lọc theo Khoảng giá
             if (productParams.MinPrice.HasValue)
             {
                 query = query.Where(p => p.Price >= productParams.MinPrice.Value);
@@ -45,7 +42,6 @@ namespace ProductManagementAPI.Controllers
                 query = query.Where(p => p.Price <= productParams.MaxPrice.Value);
             }
 
-            // 4. Sắp xếp
             query = productParams.SortBy switch
             {
                 "priceAsc" => query.OrderBy(p => p.Price),
@@ -54,7 +50,6 @@ namespace ProductManagementAPI.Controllers
                 _ => query.OrderByDescending(p => p.Id)
             };
 
-            // 5. Phân trang (Pagination)
             var totalItems = await query.CountAsync();
             var products = await query
                 .Skip((productParams.PageNumber - 1) * productParams.PageSize)
@@ -71,7 +66,7 @@ namespace ProductManagementAPI.Controllers
             });
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("{id:int}")]
         public async Task<ActionResult<Product>> GetProduct(int id)
         {
             var product = await _context.Products.FindAsync(id);
@@ -85,7 +80,6 @@ namespace ProductManagementAPI.Controllers
         }
 
         [HttpPost]
-        [Authorize]
         [Authorize(Roles = "Admin")]
         public async Task<ActionResult<Product>> CreateProduct(Product product)
         {
@@ -95,8 +89,7 @@ namespace ProductManagementAPI.Controllers
             return CreatedAtAction(nameof(GetProduct), new { id = product.Id }, product);
         }
 
-        [HttpPut("{id}")]
-        [Authorize]
+        [HttpPut("{id:int}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateProduct(int id, Product product)
         {
@@ -106,6 +99,8 @@ namespace ProductManagementAPI.Controllers
             }
 
             _context.Entry(product).State = EntityState.Modified;
+
+            _context.Entry(product).Property(p => p.CreatedAt).IsModified = false;
 
             try
             {
@@ -123,8 +118,32 @@ namespace ProductManagementAPI.Controllers
             return NoContent();
         }
 
-        [HttpDelete("{id}")]
-        [Authorize]
+        [HttpPut("{id:int}/image")]
+        [Authorize(Roles = "Admin")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> SetImage(int id, [FromBody] SetImageRequest request)
+        {
+            var product = await _context.Products.FindAsync(id);
+            if (product == null)
+            {
+                return NotFound(new { message = "Không tìm thấy sản phẩm này!" });
+            }
+
+            var imageUrl = request.ImageUrl?.Trim() ?? string.Empty;
+            if (imageUrl.Length > 0 && !IsValidImageUrl(imageUrl))
+            {
+                return BadRequest(new { message = "Đường dẫn ảnh không hợp lệ. Dùng dạng /uploads/ten-file.jpg hoặc link bắt đầu bằng http(s)://" });
+            }
+
+            product.ImageUrl = imageUrl;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Đã cập nhật ảnh sản phẩm.", imageUrl = product.ImageUrl });
+        }
+
+        [HttpDelete("{id:int}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteProduct(int id)
         {
@@ -135,9 +154,33 @@ namespace ProductManagementAPI.Controllers
             }
 
             _context.Products.Remove(product);
-            await _context.SaveChangesAsync();
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException)
+            {
+                return Conflict(new { message = "Sản phẩm đã có trong giỏ hàng hoặc đơn hàng nên không thể xóa. Bạn có thể đặt tồn kho về 0 để ngừng bán." });
+            }
 
             return NoContent();
         }
+
+        private static bool IsValidImageUrl(string url)
+        {
+            if (url.StartsWith("/uploads/", StringComparison.Ordinal))
+            {
+                return !url.Contains("..");
+            }
+
+            return Uri.TryCreate(url, UriKind.Absolute, out var uri)
+                   && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
+        }
+    }
+
+    public class SetImageRequest
+    {
+        public string ImageUrl { get; set; } = string.Empty;
     }
 }

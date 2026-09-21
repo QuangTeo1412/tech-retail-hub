@@ -48,6 +48,7 @@ namespace ProductManagementAPI.Controllers
                     c.ProductId,
                     ProductName = c.Product!.Name,
                     ProductPrice = c.Product.Price,
+                    ProductImageUrl = c.Product.ImageUrl,
                     c.Quantity,
                     TotalPrice = c.Quantity * c.Product.Price
                 })

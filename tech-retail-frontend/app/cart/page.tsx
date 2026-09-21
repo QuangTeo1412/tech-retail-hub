@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Be_Vietnam_Pro } from 'next/font/google';
-import { ApiError, apiFetch, clearSession, formatVnd, getToken } from '../lib/api';
+import { ApiError, apiFetch, clearSession, formatVnd, getToken, resolveImageUrl } from '../lib/api';
 
 const beVietnam = Be_Vietnam_Pro({
     subsets: ['vietnamese', 'latin'],
@@ -17,8 +17,36 @@ interface CartItem {
     productId: number;
     productName: string;
     productPrice: number;
+    productImageUrl?: string | null;
     quantity: number;
     totalPrice: number;
+}
+
+function CartItemImage({ item }: { item: CartItem }) {
+    const image = resolveImageUrl({
+        id: item.productId,
+        name: item.productName,
+        price: item.productPrice,
+        imageUrl: item.productImageUrl,
+    });
+
+    return (
+        <div className="relative w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden bg-white border border-gray-100">
+            {image ? (
+
+                <img
+                    src={image}
+                    alt={item.productName}
+                    loading="lazy"
+                    className="absolute inset-0 w-full h-full object-contain p-1"
+                />
+            ) : (
+                <div className="absolute inset-0 flex items-center justify-center bg-gray-50 text-2xl" role="presentation">
+                    💻
+                </div>
+            )}
+        </div>
+    );
 }
 
 export default function CartPage() {
@@ -154,6 +182,7 @@ export default function CartPage() {
                                     key={i}
                                     className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex items-center gap-4 animate-pulse"
                                 >
+                                    <div className="w-20 h-20 flex-shrink-0 rounded-xl bg-gray-200" />
                                     <div className="flex-1 space-y-2">
                                         <div className="h-4 bg-gray-200 rounded w-3/4" />
                                         <div className="h-3 bg-gray-100 rounded w-1/3" />
@@ -202,6 +231,7 @@ export default function CartPage() {
                                     key={item.id}
                                     className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex items-center gap-4"
                                 >
+                                    <CartItemImage item={item} />
                                     <div className="flex-1 min-w-0">
                                         <h2 className="text-sm font-bold text-slate-900 line-clamp-2">{item.productName}</h2>
                                         <p className="text-xs text-gray-500 mt-1">

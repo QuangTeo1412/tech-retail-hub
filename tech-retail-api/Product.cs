@@ -19,9 +19,12 @@ namespace ProductManagementAPI
         [Range(0, int.MaxValue, ErrorMessage = "Số lượng tồn kho không được âm")]
         public int Stock { get; set; }
 
-        public string Category { get; set; } = "General"; 
+        public string Category { get; set; } = "General";
 
         public string Description { get; set; } = string.Empty;
+
+        [StringLength(500, ErrorMessage = "Đường dẫn ảnh không được vượt quá 500 ký tự")]
+        public string ImageUrl { get; set; } = string.Empty;
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
