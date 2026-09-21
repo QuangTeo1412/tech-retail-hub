@@ -212,13 +212,14 @@ export default function RegisterPage() {
         setLoading(true);
 
         try {
-            const res = await fetch('http://localhost:8080/api/auth/register', {
+            const res = await fetch('http://127.0.0.1:5000/api/auth/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     email: values.email.trim(),
-                    phone: values.phone.replace(/[\s.-]/g, ''),
+                    phoneNumber: values.phone.replace(/[\s.-]/g, ''),
                     password: values.password,
+                    confirmPassword: values.confirmPassword,
                 }),
             });
 

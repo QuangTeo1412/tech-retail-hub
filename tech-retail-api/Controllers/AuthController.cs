@@ -1,11 +1,12 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using ProductManagementAPI.Models;
+using System.ComponentModel.DataAnnotations;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
+using System.Text.Json.Serialization;
 
 namespace ProductManagementAPI.Controllers
 {
@@ -205,6 +206,8 @@ namespace ProductManagementAPI.Controllers
     {
         public string Email { get; set; } = string.Empty;
         public string PhoneNumber { get; set; } = string.Empty;
+        [JsonPropertyName("phone")]
+        public string? PhoneAlias { set { if (string.IsNullOrEmpty(PhoneNumber)) PhoneNumber = value ?? string.Empty; } }
         public string Password { get; set; } = string.Empty;
         public string? ConfirmPassword { get; set; }
     }

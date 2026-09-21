@@ -102,4 +102,6 @@ app.MapControllers();
 
 app.MapFallbackToFile("index.html");
 
+await AdminSeeder.SeedAsync(app.Services);
+
 app.Run();
