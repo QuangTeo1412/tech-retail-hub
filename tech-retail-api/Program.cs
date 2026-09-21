@@ -57,7 +57,7 @@ builder.Services.AddSwaggerGen(c =>
 
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Description = "Dán token đăng nhập vào đây (không cần gõ chữ Bearer)",
+        Description = "Dán token đăng nhập vào đây!",
         Type = SecuritySchemeType.Http,
         Scheme = "bearer",
         BearerFormat = "JWT"
