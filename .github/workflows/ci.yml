@@ -1,0 +1,38 @@
+name: CI/CD Build Check
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  verify-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Build Frontend
+        working-directory: ./tech-retail-frontend
+        run: |
+          npm ci || npm install
+          npm run build
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Build Backend
+        working-directory: ./tech-retail-api
+        run: |
+          dotnet restore
+          dotnet build --no-restore --configuration Release
