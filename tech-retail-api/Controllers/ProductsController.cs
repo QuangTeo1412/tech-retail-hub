@@ -177,6 +177,33 @@ namespace ProductManagementAPI.Controllers
             return Uri.TryCreate(url, UriKind.Absolute, out var uri)
                    && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
         }
+        [HttpGet]
+        public async Task<ActionResult<PagedResult<Product>>> GetProducts(
+        [FromQuery] string? search,
+        [FromQuery] string? sort = "newest",
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10)
+        {
+            var query = _context.Products.AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                query = query.Where(p => p.Name.Contains(search));
+            }
+
+            query = sort switch
+            {
+                "priceAsc" => query.OrderBy(p => p.Price),
+                "priceDesc" => query.OrderByDescending(p => p.Price),
+                "name" => query.OrderBy(p => p.Name),
+                _ => query.OrderByDescending(p => p.Id)
+            };
+
+            var totalItems = await query.CountAsync();
+            var data = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+
+            return Ok(new PagedResult<Product>(data, totalItems, page, pageSize));
+        }
     }
 
     public class SetImageRequest
