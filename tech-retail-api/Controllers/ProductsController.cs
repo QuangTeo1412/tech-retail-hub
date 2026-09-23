@@ -18,7 +18,7 @@ namespace ProductManagementAPI.Controllers
 
         [HttpGet]
         [AllowAnonymous]
-        public async Task<ActionResult<PagedResult<Product>>> GetProducts([FromQuery] ProductParams productParams)
+        public async Task<IActionResult> GetProducts([FromQuery] ProductParams productParams)
         {
             var query = _context.Products.AsQueryable();
 
@@ -56,7 +56,14 @@ namespace ProductManagementAPI.Controllers
                 .Take(productParams.PageSize)
                 .ToListAsync();
 
-            return Ok(new PagedResult<Product>(products, totalItems, productParams.PageNumber, productParams.PageSize));
+            return Ok(new
+            {
+                TotalItems = totalItems,
+                PageNumber = productParams.PageNumber,
+                PageSize = productParams.PageSize,
+                TotalPages = (int)Math.Ceiling(totalItems / (double)productParams.PageSize),
+                Data = products
+            });
         }
 
         [HttpGet("{id:int}")]
@@ -159,6 +166,16 @@ namespace ProductManagementAPI.Controllers
             return NoContent();
         }
 
+        private static bool IsValidsImageUrl(string url)
+        {
+            if (url.StartsWith("/uploads/", StringComparison.Ordinal))
+            {
+                return !url.Contains("..");
+            }
+
+            return Uri.TryCreate(url, UriKind.Absolute, out var uri)
+                   && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
+        }
         private static bool IsValidImageUrl(string url)
         {
             if (url.StartsWith("/uploads/", StringComparison.Ordinal))

@@ -59,16 +59,17 @@ export default function FeaturedSection({ searchQuery, onAddToCart }: FeaturedSe
 
     const updateScrollState = useCallback(() => {
         const el = scrollRef.current;
-        if (!el) return;
+        if (!el || el.clientWidth === 0) return;
 
-        const maxScroll = el.scrollWidth - el.clientWidth;
-        const pageCount = Math.max(1, Math.ceil(el.scrollWidth / el.clientWidth));
-        const page = maxScroll > 0 ? Math.round((el.scrollLeft / maxScroll) * (pageCount - 1)) : 0;
+        const maxScroll = Math.max(0, el.scrollWidth - el.clientWidth);
+        const rawPageCount = Math.ceil(el.scrollWidth / (el.clientWidth || 1));
+        const pageCount = Number.isFinite(rawPageCount) && rawPageCount > 0 ? rawPageCount : 1;
+        const page = maxScroll > 0 && pageCount > 1 ? Math.round((el.scrollLeft / maxScroll) * (pageCount - 1)) : 0;
 
         setScrollState({
             canPrev: el.scrollLeft > 4,
             canNext: el.scrollLeft < maxScroll - 4,
-            page,
+            page: Math.min(page, pageCount - 1),
             pageCount,
         });
     }, []);
@@ -93,9 +94,9 @@ export default function FeaturedSection({ searchQuery, onAddToCart }: FeaturedSe
     const scrollToPage = (index: number) => {
         const el = scrollRef.current;
         if (!el) return;
-        const maxScroll = el.scrollWidth - el.clientWidth;
+        const maxScroll = Math.max(0, el.scrollWidth - el.clientWidth);
         const { pageCount } = scrollState;
-        el.scrollTo({ left: pageCount > 1 ? (index / (pageCount - 1)) * maxScroll : 0, behavior: 'smooth' });
+        el.scrollTo({ left: pageCount > 1 && maxScroll > 0 ? (index / (pageCount - 1)) * maxScroll : 0, behavior: 'smooth' });
     };
 
     useEffect(() => {
@@ -103,7 +104,7 @@ export default function FeaturedSection({ searchQuery, onAddToCart }: FeaturedSe
         const interval = setInterval(() => {
             const el = scrollRef.current;
             if (!el || document.hidden) return;
-            const maxScroll = el.scrollWidth - el.clientWidth;
+            const maxScroll = Math.max(0, el.scrollWidth - el.clientWidth);
             if (el.scrollLeft >= maxScroll - 4) {
                 el.scrollTo({ left: 0, behavior: 'smooth' });
             } else {
@@ -114,6 +115,8 @@ export default function FeaturedSection({ searchQuery, onAddToCart }: FeaturedSe
     }, [paused, reducedMotion, products.length]);
 
     const { canPrev, canNext, page, pageCount } = scrollState;
+    const safePageCount = Number.isFinite(pageCount) && pageCount > 0 ? Math.floor(pageCount) : 1;
+
     const arrowClass =
         'w-9 h-9 rounded-full border border-gray-200 bg-white text-slate-700 flex items-center justify-center transition-colors hover:bg-blue-600 hover:text-white hover:border-blue-600 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-slate-700 disabled:hover:border-gray-200';
 
@@ -178,9 +181,9 @@ export default function FeaturedSection({ searchQuery, onAddToCart }: FeaturedSe
                         ))}
                     </div>
 
-                    {pageCount > 1 && (
+                    {safePageCount > 1 && (
                         <div className="flex justify-center items-center">
-                            {Array.from({ length: pageCount }).map((_, i) => (
+                            {Array.from({ length: safePageCount }).map((_, i) => (
                                 <button
                                     key={i}
                                     type="button"
@@ -190,8 +193,7 @@ export default function FeaturedSection({ searchQuery, onAddToCart }: FeaturedSe
                                     className="p-1.5"
                                 >
                                     <span
-                                        className={`block h-2 rounded-full transition-all duration-300 ${i === page ? 'w-6 bg-blue-600' : 'w-2 bg-gray-300 hover:bg-gray-400'
-                                            }`}
+                                        className={`block h-2 rounded-full transition-all duration-300 ${i === page ? 'w-6 bg-blue-600' : 'w-2 bg-gray-300 hover:bg-gray-400'}`}
                                     />
                                 </button>
                             ))}
