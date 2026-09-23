@@ -25,6 +25,7 @@ namespace ProductManagementAPI.Controllers
 
         private int GetUserIdFromToken()
         {
+            // "userId" là claim riêng do AuthController tạo, không bị đổi tên khi đọc token nên đọc trước
             var userIdClaim = User.FindFirst("userId")?.Value
                               ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value
                               ?? User.FindFirst("id")?.Value
@@ -82,6 +83,7 @@ namespace ProductManagementAPI.Controllers
 
             await _context.SaveChangesAsync();
 
+            // Gửi thư xác nhận tới email của CHÍNH người đặt hàng (trước đây gán cứng một địa chỉ Gmail)
             var user = await _context.Users.FindAsync(userId);
             if (user != null && !string.IsNullOrWhiteSpace(user.Email))
             {
@@ -94,6 +96,10 @@ namespace ProductManagementAPI.Controllers
 
             return Ok(new { Message = "Đặt hàng thành công!", OrderId = order.Id, Total = order.TotalAmount });
         }
+
+        /// <summary>
+        /// Gửi thư ở nền để không làm chậm việc đặt hàng. Lỗi (nếu có) được ghi vào log thay vì bị nuốt mất.
+        /// </summary>
         private async Task SendConfirmationEmailAsync(string toEmail, int orderId, decimal totalAmount)
         {
             try
@@ -124,6 +130,10 @@ namespace ProductManagementAPI.Controllers
             return Ok(orders);
         }
 
+        /// <summary>
+        /// Admin xem TẤT CẢ đơn hàng (khác /my-orders chỉ trả đơn của người đang đăng nhập).
+        /// Lọc theo trạng thái bằng ?status=Pending (bỏ trống để xem tất cả).
+        /// </summary>
         [HttpGet("all")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetAllOrders([FromQuery] string? status = null)

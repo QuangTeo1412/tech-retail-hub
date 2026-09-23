@@ -1,4 +1,17 @@
-﻿export interface HeroSlide {
+﻿// Dữ liệu và hằng số dùng cho trang chủ
+
+// Các trạng thái đơn hàng hợp lệ (phải khớp với validStatuses trong OrderController.cs)
+export const ORDER_STATUSES = ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'] as const;
+
+export const ORDER_STATUS_LABELS: Record<string, string> = {
+    Pending: 'Chờ thanh toán',
+    Processing: 'Đang xử lý',
+    Shipped: 'Đang giao',
+    Delivered: 'Đã giao',
+    Cancelled: 'Đã hủy',
+};
+
+export interface HeroSlide {
     id: number;
     tag: string;
     title: string;
@@ -8,13 +21,15 @@
     image: string;
 }
 
+// Ẩn thanh cuộn nhưng vẫn cuộn được (không cần khai báo thêm CSS)
 export const NO_SCROLLBAR = '[scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden';
 
-export const HERO_INTERVAL = 6000;
-export const PRODUCT_AUTOPLAY_INTERVAL = 6000;
-export const CARD_WIDTH = 280;
-export const CARD_GAP = 16;
+export const HERO_INTERVAL = 6000; // ms giữa 2 lần tự chuyển banner
+export const PRODUCT_AUTOPLAY_INTERVAL = 6000; // ms giữa 2 lần tự cuộn danh sách sản phẩm
+export const CARD_WIDTH = 280; // phải khớp với w-[280px] của thẻ sản phẩm
+export const CARD_GAP = 16; // phải khớp với gap-4
 
+// Ảnh banner nên rộng 1920px trở lên. Có thể thay bằng ảnh riêng: '/images/banners/ten-anh.webp' (đặt trong public/)
 export const HERO_SLIDES: HeroSlide[] = [
     {
         id: 1,

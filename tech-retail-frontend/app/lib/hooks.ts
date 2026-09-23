@@ -1,6 +1,8 @@
 ﻿import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { apiFetch, getToken } from './api';
 
+/* ---------- Người dùng đang đăng nhập (lưu trong localStorage) ---------- */
+
 export interface StoredUser {
     username?: string;
     name?: string;
@@ -8,9 +10,11 @@ export interface StoredUser {
     avatar?: string;
     avatarUrl?: string;
     image?: string;
+    role?: string; // "Admin" hoặc "User" (do AuthController gán khi đăng nhập/đăng ký)
 }
 
 function subscribeUser(onChange: () => void) {
+    // 'storage': đổi ở tab khác; 'userLoginStateChanged': đăng nhập / đăng xuất ở tab này
     window.addEventListener('storage', onChange);
     window.addEventListener('userLoginStateChanged', onChange);
     return () => {
@@ -41,6 +45,8 @@ export function useStoredUser(): StoredUser | null {
     }, [raw]);
 }
 
+/* ---------- Số lượng sản phẩm trong giỏ hàng (lấy từ backend) ---------- */
+
 export function useCartCount(isLoggedIn: boolean) {
     const [cartCount, setCartCount] = useState(0);
 
@@ -53,7 +59,7 @@ export function useCartCount(isLoggedIn: boolean) {
                 const items = await apiFetch<{ quantity: number }[]>('/api/Cart');
                 if (!cancelled) setCartCount(items.reduce((sum, item) => sum + item.quantity, 0));
             } catch {
-
+                // Token hết hạn hoặc backend chưa chạy: giữ nguyên số hiện tại
             }
         })();
 
@@ -64,6 +70,8 @@ export function useCartCount(isLoggedIn: boolean) {
 
     return [cartCount, setCartCount] as const;
 }
+
+/* ---------- Thông báo nhỏ (toast) ---------- */
 
 export interface ToastState {
     type: 'success' | 'error';
@@ -89,6 +97,9 @@ export function useToast() {
     return { toast, showToast };
 }
 
+/* ---------- Tiện ích ---------- */
+
+/** Người dùng bật "giảm chuyển động" trong hệ điều hành thì tắt hiệu ứng tự chạy */
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 
 export function usePrefersReducedMotion() {
@@ -98,11 +109,12 @@ export function usePrefersReducedMotion() {
             mq.addEventListener('change', onChange);
             return () => mq.removeEventListener('change', onChange);
         },
-        () => window.matchMedia(REDUCED_MOTION_QUERY).matches,
-        () => false
+        () => window.matchMedia(REDUCED_MOTION_QUERY).matches, // giá trị trên trình duyệt
+        () => false // giá trị khi render trên server
     );
 }
 
+/** Trả về giá trị sau khi người dùng ngừng thay đổi `delay` ms (dùng cho ô tìm kiếm) */
 export function useDebouncedValue<T>(value: T, delay = 400): T {
     const [debounced, setDebounced] = useState(value);
 
