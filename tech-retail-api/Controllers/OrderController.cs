@@ -94,7 +94,6 @@ namespace ProductManagementAPI.Controllers
 
             return Ok(new { Message = "Đặt hàng thành công!", OrderId = order.Id, Total = order.TotalAmount });
         }
-
         private async Task SendConfirmationEmailAsync(string toEmail, int orderId, decimal totalAmount)
         {
             try
@@ -120,6 +119,40 @@ namespace ProductManagementAPI.Controllers
                 .ThenInclude(oi => oi.Product)
                 .Where(o => o.UserId == userId)
                 .OrderByDescending(o => o.OrderDate)
+                .ToListAsync();
+
+            return Ok(orders);
+        }
+
+        [HttpGet("all")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetAllOrders([FromQuery] string? status = null)
+        {
+            var query = _context.Orders.AsQueryable();
+            if (!string.IsNullOrWhiteSpace(status))
+            {
+                query = query.Where(o => o.Status == status);
+            }
+
+            var orders = await query
+                .OrderByDescending(o => o.OrderDate)
+                .Select(o => new
+                {
+                    o.Id,
+                    o.UserId,
+                    Username = _context.Users.Where(u => u.Id == o.UserId).Select(u => u.Username).FirstOrDefault(),
+                    Email = _context.Users.Where(u => u.Id == o.UserId).Select(u => u.Email).FirstOrDefault(),
+                    o.OrderDate,
+                    o.TotalAmount,
+                    o.Status,
+                    Items = o.OrderItems.Select(oi => new
+                    {
+                        oi.ProductId,
+                        ProductName = oi.Product != null ? oi.Product.Name : "(Sản phẩm đã xóa)",
+                        oi.Quantity,
+                        oi.Price
+                    })
+                })
                 .ToListAsync();
 
             return Ok(orders);
