@@ -10,11 +10,10 @@ export interface StoredUser {
     avatar?: string;
     avatarUrl?: string;
     image?: string;
-    role?: string; // "Admin" hoặc "User" (do AuthController gán khi đăng nhập/đăng ký)
+    role?: string;
 }
 
 function subscribeUser(onChange: () => void) {
-    // 'storage': đổi ở tab khác; 'userLoginStateChanged': đăng nhập / đăng xuất ở tab này
     window.addEventListener('storage', onChange);
     window.addEventListener('userLoginStateChanged', onChange);
     return () => {
@@ -59,7 +58,7 @@ export function useCartCount(isLoggedIn: boolean) {
                 const items = await apiFetch<{ quantity: number }[]>('/api/Cart');
                 if (!cancelled) setCartCount(items.reduce((sum, item) => sum + item.quantity, 0));
             } catch {
-                // Token hết hạn hoặc backend chưa chạy: giữ nguyên số hiện tại
+
             }
         })();
 
@@ -109,8 +108,8 @@ export function usePrefersReducedMotion() {
             mq.addEventListener('change', onChange);
             return () => mq.removeEventListener('change', onChange);
         },
-        () => window.matchMedia(REDUCED_MOTION_QUERY).matches, // giá trị trên trình duyệt
-        () => false // giá trị khi render trên server
+        () => window.matchMedia(REDUCED_MOTION_QUERY).matches,
+        () => false
     );
 }
 

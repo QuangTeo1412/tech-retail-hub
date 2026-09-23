@@ -57,7 +57,6 @@ export default function AdminProductsPage() {
         };
     }, [keyword, requestKey, handleAuthError]);
 
-    // Kết quả chỉ hợp lệ khi đúng với lần tìm hiện tại, còn lại coi như đang tải
     const isCurrent = result !== null && result.key === requestKey;
     const status: 'loading' | 'error' | 'ready' = !isCurrent ? 'loading' : result.failed ? 'error' : 'ready';
     const products = isCurrent && !result.failed ? result.products : [];
@@ -69,7 +68,7 @@ export default function AdminProductsPage() {
         setNotice('');
         try {
             await apiFetch(`/api/Products/${product.id}`, { method: 'DELETE' });
-            setReloadKey((k) => k + 1); // tải lại danh sách thay vì tự lọc, tránh lệch với dữ liệu thật
+            setReloadKey((k) => k + 1);
         } catch (err) {
             if (!handleAuthError(err)) {
                 setNotice(err instanceof Error ? err.message : 'Không thể xóa sản phẩm.');

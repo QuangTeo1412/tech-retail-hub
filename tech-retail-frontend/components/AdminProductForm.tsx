@@ -5,7 +5,7 @@ import { ApiError, apiFetch, resolveImageUrl, uploadImage, type Product } from '
 
 interface ProductFormValues {
     name: string;
-    price: string; // giữ dạng chuỗi lúc nhập, chuyển sang số lúc gửi đi
+    price: string;
     stock: string;
     category: string;
     description: string;
@@ -34,14 +34,13 @@ function productToForm(product: Product | null): ProductFormValues {
 }
 
 interface AdminProductFormProps {
-    product: Product | null; // null = tạo sản phẩm mới
+    product: Product | null;
     onClose: () => void;
-    onSaved: () => void; // gọi lại sau khi lưu thành công để trang danh sách tải lại
+    onSaved: () => void;
 }
 
 /** Cửa sổ thêm / sửa sản phẩm, có chọn ảnh (upload lên backend) hoặc dán link ảnh có sẵn. */
 export default function AdminProductForm({ product, onClose, onSaved }: AdminProductFormProps) {
-    // Theo dõi sản phẩm đang hiển thị để phát hiện khi prop `product` đổi (ví dụ bấm "Sửa" sang sản phẩm khác)
     const [shownProduct, setShownProduct] = useState(product);
     const [form, setForm] = useState<ProductFormValues>(() => productToForm(product));
     const [uploading, setUploading] = useState(false);
@@ -60,7 +59,7 @@ export default function AdminProductForm({ product, onClose, onSaved }: AdminPro
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        e.target.value = ''; // cho phép chọn lại đúng file này ở lần sau nếu cần
+        e.target.value = '';
         if (!file) return;
 
         setUploading(true);
@@ -233,8 +232,7 @@ export default function AdminProductForm({ product, onClose, onSaved }: AdminPro
                         <div className="flex items-center gap-3">
                             <div className="w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden bg-gray-50 border border-gray-100 flex items-center justify-center">
                                 {previewImage ? (
-                                    // Ảnh xem trước: dùng <img> thường để không phải khai báo domain trong next.config
-                                    // eslint-disable-next-line @next/next/no-img-element
+                                  
                                     <img src={previewImage} alt="" className="w-full h-full object-contain p-1" />
                                 ) : (
                                     <span className="text-2xl" role="presentation">

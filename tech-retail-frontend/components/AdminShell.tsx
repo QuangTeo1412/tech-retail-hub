@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { clearSession, getToken } from '../app/lib/api';
 import { useStoredUser } from '../app/lib/hooks';
 
@@ -18,26 +18,29 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
     const pathname = usePathname();
     const user = useStoredUser();
     const isAdmin = user?.role === 'Admin';
+    const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    useEffect(() => {
+        if (!mounted) return;
         if (!getToken()) {
             router.replace('/login');
             return;
         }
-        // user === null lúc mới vào có thể do localStorage chưa kịp đọc, không vội chuyển hướng
         if (user && !isAdmin) {
             router.replace('/');
         }
-    }, [user, isAdmin, router]);
+    }, [mounted, user, isAdmin, router]);
 
     const handleLogout = () => {
         clearSession();
         router.push('/login');
     };
 
-    // Việc chặn ở đây chỉ để giao diện gọn gàng khi chưa đủ quyền; quyền thật sự do backend
-    // kiểm tra bằng [Authorize(Roles = "Admin")] trên từng API, nên không thể "vượt" chỉ bằng cách sửa localStorage.
-    if (!getToken() || (user && !isAdmin)) {
+    if (!mounted || !getToken() || (user && !isAdmin)) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-[#f8f9fa]">
                 <p className="text-sm text-gray-500">Đang kiểm tra quyền truy cập...</p>
