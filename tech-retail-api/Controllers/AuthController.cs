@@ -38,7 +38,7 @@ namespace ProductManagementAPI.Controllers
 
             if (string.IsNullOrWhiteSpace(identifier) || string.IsNullOrWhiteSpace(request.Password))
             {
-                return BadRequest(new { message = "Vui lòng nhập đầy đủ Email/SĐT/Username và Mật khẩu!" });
+                return BadRequest(new { message = "Vui lòng nhập đầy đủ Email/SĐT và Mật khẩu!" });
             }
 
             var user = await _context.Users.FirstOrDefaultAsync(u =>
@@ -254,7 +254,6 @@ namespace ProductManagementAPI.Controllers
             var email = request.Email?.Trim() ?? string.Empty;
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
 
-            // Không tiết lộ email có tồn tại trong hệ thống hay không -> luôn trả cùng 1 câu
             if (user != null && !user.EmailConfirmed)
             {
                 user.EmailVerificationToken = GenerateToken();
@@ -263,7 +262,7 @@ namespace ProductManagementAPI.Controllers
                 await SendVerificationEmailAsync(user);
             }
 
-            return Ok(new { message = "Nếu email tồn tại và chưa xác nhận, chúng tôi đã gửi lại thư xác nhận." });
+            return Ok(new { message = "Hệ thống đã gửi lại thư xác nhận, vui lòng kiểm tra email của bạn." });
         }
 
         [HttpPost("forgot-password")]
@@ -280,8 +279,7 @@ namespace ProductManagementAPI.Controllers
                 await SendPasswordResetEmailAsync(user);
             }
 
-            // Luôn trả cùng 1 câu, kể cả khi email không tồn tại -> tránh lộ danh sách email trong hệ thống
-            return Ok(new { message = "Nếu email tồn tại trong hệ thống, chúng tôi đã gửi hướng dẫn đặt lại mật khẩu." });
+            return Ok(new { message = "Hệ thống đã gửi hướng dẫn đặt lại mật khẩu, vui lòng kiểm tra email của bạn." });
         }
 
         [HttpPost("reset-password")]
@@ -337,10 +335,11 @@ namespace ProductManagementAPI.Controllers
             try
             {
                 await _emailService.SendEmailAsync(user.Email, "Xác nhận email - KAITO STORE", body);
+                Console.WriteLine($"[SendEmail] Đã gửi email xác nhận tới {user.Email}");
             }
-            catch
+            catch (Exception ex) 
             {
-
+                Console.WriteLine($"[SendEmail] LỖI gửi email xác nhận tới {user.Email}: {ex}");
             }
         }
 
@@ -356,9 +355,11 @@ namespace ProductManagementAPI.Controllers
             try
             {
                 await _emailService.SendEmailAsync(user.Email, "Đặt lại mật khẩu - KAITO STORE", body);
+                Console.WriteLine($"[SendEmail] Đã gửi email reset mật khẩu tới {user.Email}");
             }
-            catch
+            catch (Exception ex)
             {
+                Console.WriteLine($"[SendEmail] LỖI gửi email reset mật khẩu tới {user.Email}: {ex}");
             }
         }
 

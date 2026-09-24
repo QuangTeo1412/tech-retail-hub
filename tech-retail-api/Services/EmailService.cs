@@ -66,7 +66,7 @@ namespace ProductManagementAPI.Services
 
         public async Task SendEmailAsync(string toEmail, string subject, string body)
         {
-            await SendEmailAsync(toEmail, subject, body);
+            await SendAsync(toEmail, subject, body);
         }
     }
 }
