@@ -86,27 +86,29 @@ export default function LoginPage() {
                 }),
             });
 
-            const contentType = res.headers.get('content-type');
-            if (contentType && contentType.includes('application/json')) {
-                const data = await res.json();
+            const responseText = await res.text();
+            let data;
+            try {
+                data = JSON.parse(responseText);
+            } catch {
+                data = { message: responseText };
+            }
 
-                if (res.ok) {
-                    localStorage.setItem('token', data.token || '');
-                    localStorage.setItem('user', JSON.stringify(data.user || { username: identifier }));
+            if (res.ok) {
+                localStorage.setItem('token', data.token || data.accessToken || '');
+                localStorage.setItem('user', JSON.stringify(data.user || { username: identifier }));
 
-                    window.dispatchEvent(new Event('userLoginStateChanged'));
-
-                    router.push('/');
-
-                    if (data?.code === 'EMAIL_NOT_CONFIRMED') {
-                        setErrorMsg(data.message || 'Tài khoản chưa được xác nhận email.');
-                        setShowResendButton(true);
-                    } else {
-                        setErrorMsg(data.message || 'Mật khẩu hoặc tài khoản không chính xác!');
-                    }
-                }
+                window.dispatchEvent(new Event('userLoginStateChanged'));
+                router.push('/');
             } else {
-                setErrorMsg('Không nhận được dữ liệu JSON từ Backend (Kiểm tra lại Backend).');
+                const errorText = data?.message || data?.title || data?.error || 'Mật khẩu hoặc tài khoản không chính xác!';
+
+                if (data?.code === 'EMAIL_NOT_CONFIRMED' || errorText.toLowerCase().includes('not confirmed')) {
+                    setErrorMsg('Tài khoản chưa được xác nhận email.');
+                    setShowResendButton(true);
+                } else {
+                    setErrorMsg(errorText);
+                }
             }
         } catch (err) {
             console.error('Lỗi fetch:', err);
@@ -169,7 +171,6 @@ export default function LoginPage() {
                         {errorMsg && (
                             <div role="alert" className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 text-xs font-bold rounded-xl text-center">
                                 <p>{errorMsg}</p>
-                                {/* Hiển thị nút bấm gửi lại email xác nhận khi dính lỗi EMAIL_NOT_CONFIRMED */}
                                 {showResendButton && (
                                     <button
                                         type="button"
