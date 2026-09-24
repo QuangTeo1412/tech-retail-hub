@@ -12,6 +12,9 @@ interface ProductFormValues {
     imageUrl: string;
 }
 
+type FieldName = 'name' | 'price' | 'stock';
+type FieldErrors = Partial<Record<FieldName, string>>;
+
 const EMPTY_FORM: ProductFormValues = {
     name: '',
     price: '',
@@ -20,6 +23,28 @@ const EMPTY_FORM: ProductFormValues = {
     description: '',
     imageUrl: '',
 };
+
+const FIELD_IDS: Record<FieldName, string> = {
+    name: 'pf-name',
+    price: 'pf-price',
+    stock: 'pf-stock',
+};
+
+const LABEL_CLASS = 'block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1';
+
+const inputClass = (hasError: boolean) =>
+    `w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none transition-colors ${hasError ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-blue-500'
+    }`;
+
+/* Thông báo lỗi dưới ô nhập: chữ đỏ, in đậm (thay cho bong bóng cảnh báo mặc định của trình duyệt) */
+function FieldError({ id, message }: { id: string; message?: string }) {
+    if (!message) return null;
+    return (
+        <p id={id} role="alert" className="mt-1.5 text-xs font-bold text-red-600">
+            {message}
+        </p>
+    );
+}
 
 function productToForm(product: Product | null): ProductFormValues {
     if (!product) return EMPTY_FORM;
@@ -43,6 +68,7 @@ interface AdminProductFormProps {
 export default function AdminProductForm({ product, onClose, onSaved }: AdminProductFormProps) {
     const [shownProduct, setShownProduct] = useState(product);
     const [form, setForm] = useState<ProductFormValues>(() => productToForm(product));
+    const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
     const [uploading, setUploading] = useState(false);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
@@ -50,12 +76,18 @@ export default function AdminProductForm({ product, onClose, onSaved }: AdminPro
     if (product !== shownProduct) {
         setShownProduct(product);
         setForm(productToForm(product));
+        setFieldErrors({});
         setError('');
     }
 
     const isEditing = product !== null;
     const isUploadedFile = form.imageUrl.startsWith('/uploads/');
     const previewImage = resolveImageUrl({ id: 0, name: '', price: 0, imageUrl: form.imageUrl });
+
+    const updateField = (field: FieldName, value: string) => {
+        setForm((prev) => ({ ...prev, [field]: value }));
+        setFieldErrors((prev) => (prev[field] ? { ...prev, [field]: undefined } : prev));
+    };
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -74,31 +106,42 @@ export default function AdminProductForm({ product, onClose, onSaved }: AdminPro
         }
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setError('');
-
+    const validate = (): FieldErrors => {
+        const errs: FieldErrors = {};
         const priceNumber = Number(form.price);
         const stockNumber = Number(form.stock);
 
         if (!form.name.trim()) {
-            setError('Vui lòng nhập tên sản phẩm.');
-            return;
+            errs.name = 'Vui lòng nhập tên sản phẩm.';
         }
-        if (!Number.isFinite(priceNumber) || priceNumber <= 0) {
-            setError('Giá sản phẩm phải lớn hơn 0.');
-            return;
+        if (form.price.trim() === '' || !Number.isFinite(priceNumber) || priceNumber <= 0) {
+            errs.price = 'Giá sản phẩm phải lớn hơn 0.';
         }
-        if (!Number.isFinite(stockNumber) || stockNumber < 0) {
-            setError('Số lượng tồn kho không được âm.');
+        if (form.stock.trim() === '' || !Number.isFinite(stockNumber) || stockNumber < 0) {
+            errs.stock = 'Số lượng tồn kho không được âm.';
+        }
+
+        return errs;
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError('');
+
+        const errs = validate();
+        setFieldErrors(errs);
+
+        const firstInvalid = (Object.keys(FIELD_IDS) as FieldName[]).find((key) => errs[key]);
+        if (firstInvalid) {
+            document.getElementById(FIELD_IDS[firstInvalid])?.focus();
             return;
         }
 
         const payload = {
             id: product?.id ?? 0,
             name: form.name.trim(),
-            price: priceNumber,
-            stock: stockNumber,
+            price: Number(form.price),
+            stock: Number(form.stock),
             category: form.category.trim() || 'General',
             description: form.description.trim(),
             imageUrl: form.imageUrl.trim(),
@@ -146,7 +189,9 @@ export default function AdminProductForm({ product, onClose, onSaved }: AdminPro
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+                {/* noValidate: tắt bong bóng cảnh báo mặc định của trình duyệt (tiếng Anh, không chỉnh style được),
+                    dùng thông báo tiếng Việt tự viết (FieldError) ở dưới từng ô thay cho nó */}
+                <form onSubmit={handleSubmit} noValidate className="px-6 py-5 space-y-4">
                     {error && (
                         <div role="alert" className="p-3 bg-red-50 border border-red-200 text-red-600 text-xs rounded-xl font-bold">
                             {error}
@@ -154,37 +199,42 @@ export default function AdminProductForm({ product, onClose, onSaved }: AdminPro
                     )}
 
                     <div>
-                        <label htmlFor="pf-name" className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">
+                        <label htmlFor="pf-name" className={LABEL_CLASS}>
                             Tên sản phẩm
                         </label>
                         <input
                             id="pf-name"
                             type="text"
-                            required
                             value={form.name}
-                            onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-                            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500"
+                            onChange={(e) => updateField('name', e.target.value)}
+                            aria-invalid={!!fieldErrors.name}
+                            aria-describedby={fieldErrors.name ? 'pf-name-error' : undefined}
+                            className={inputClass(!!fieldErrors.name)}
                         />
+                        <FieldError id="pf-name-error" message={fieldErrors.name} />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label htmlFor="pf-price" className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">
+                            <label htmlFor="pf-price" className={LABEL_CLASS}>
                                 Giá (đ)
                             </label>
                             <input
                                 id="pf-price"
                                 type="number"
                                 min="1"
-                                step="1000"
-                                required
+                                step="1"
+                                inputMode="numeric"
                                 value={form.price}
-                                onChange={(e) => setForm((prev) => ({ ...prev, price: e.target.value }))}
-                                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500"
+                                onChange={(e) => updateField('price', e.target.value)}
+                                aria-invalid={!!fieldErrors.price}
+                                aria-describedby={fieldErrors.price ? 'pf-price-error' : undefined}
+                                className={inputClass(!!fieldErrors.price)}
                             />
+                            <FieldError id="pf-price-error" message={fieldErrors.price} />
                         </div>
                         <div>
-                            <label htmlFor="pf-stock" className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">
+                            <label htmlFor="pf-stock" className={LABEL_CLASS}>
                                 Tồn kho
                             </label>
                             <input
@@ -192,16 +242,19 @@ export default function AdminProductForm({ product, onClose, onSaved }: AdminPro
                                 type="number"
                                 min="0"
                                 step="1"
-                                required
+                                inputMode="numeric"
                                 value={form.stock}
-                                onChange={(e) => setForm((prev) => ({ ...prev, stock: e.target.value }))}
-                                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500"
+                                onChange={(e) => updateField('stock', e.target.value)}
+                                aria-invalid={!!fieldErrors.stock}
+                                aria-describedby={fieldErrors.stock ? 'pf-stock-error' : undefined}
+                                className={inputClass(!!fieldErrors.stock)}
                             />
+                            <FieldError id="pf-stock-error" message={fieldErrors.stock} />
                         </div>
                     </div>
 
                     <div>
-                        <label htmlFor="pf-category" className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">
+                        <label htmlFor="pf-category" className={LABEL_CLASS}>
                             Danh mục
                         </label>
                         <input
@@ -210,12 +263,12 @@ export default function AdminProductForm({ product, onClose, onSaved }: AdminPro
                             placeholder="Laptop, Điện thoại, Linh kiện..."
                             value={form.category}
                             onChange={(e) => setForm((prev) => ({ ...prev, category: e.target.value }))}
-                            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500"
+                            className={inputClass(false)}
                         />
                     </div>
 
                     <div>
-                        <label htmlFor="pf-description" className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">
+                        <label htmlFor="pf-description" className={LABEL_CLASS}>
                             Mô tả
                         </label>
                         <textarea
@@ -223,16 +276,15 @@ export default function AdminProductForm({ product, onClose, onSaved }: AdminPro
                             rows={3}
                             value={form.description}
                             onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
-                            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500 resize-none"
+                            className={`${inputClass(false)} resize-none`}
                         />
                     </div>
 
                     <div>
-                        <span className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">Ảnh sản phẩm</span>
+                        <span className={LABEL_CLASS}>Ảnh sản phẩm</span>
                         <div className="flex items-center gap-3">
                             <div className="w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden bg-gray-50 border border-gray-100 flex items-center justify-center">
                                 {previewImage ? (
-                                  
                                     <img src={previewImage} alt="" className="w-full h-full object-contain p-1" />
                                 ) : (
                                     <span className="text-2xl" role="presentation">
