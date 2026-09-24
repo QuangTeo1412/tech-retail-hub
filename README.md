@@ -73,8 +73,8 @@ KaitoStore là dự án thương mại điện tử chuyên cung cấp các dòn
 - [ ] Đánh giá / xếp hạng sản phẩm.
 
 **Tài khoản**
-- [ ] Xác thực email khi đăng ký (hiện ai cũng đăng ký được bằng email bất kỳ mà không cần xác nhận).
-- [ ] Trang "Quên mật khẩu" (đã có link trên form đăng nhập nhưng chưa có trang xử lý).
+- [✔] Xác thực email khi đăng ký (hiện ai cũng đăng ký được bằng email bất kỳ mà không cần xác nhận).
+- [✔] Trang "Quên mật khẩu" (đã có link trên form đăng nhập nhưng chưa có trang xử lý).
 
 **Quản trị**
 - [ ] Quản lý người dùng (xem danh sách, khóa/mở khóa tài khoản, cấp quyền Admin qua giao diện thay vì sửa thẳng database).
