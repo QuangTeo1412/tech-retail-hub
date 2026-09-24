@@ -37,6 +37,10 @@ export default function LoginPage() {
     const [errorMsg, setErrorMsg] = useState('');
     const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
+    const [showResendButton, setShowResendButton] = useState(false);
+    const [resendLoading, setResendLoading] = useState(false);
+    const [resendMessage, setResendMessage] = useState('');
+
     const router = useRouter();
 
     const clearFieldError = (field: FieldName) => {
@@ -46,6 +50,8 @@ export default function LoginPage() {
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setErrorMsg('');
+        setResendMessage('');
+        setShowResendButton(false);
 
         const errs: FieldErrors = {};
         if (!identifier.trim()) {
@@ -91,8 +97,13 @@ export default function LoginPage() {
                     window.dispatchEvent(new Event('userLoginStateChanged'));
 
                     router.push('/');
-                } else {
-                    setErrorMsg(data.message || 'Mật khẩu hoặc tài khoản không chính xác!');
+
+                    if (data?.code === 'EMAIL_NOT_CONFIRMED') {
+                        setErrorMsg(data.message || 'Tài khoản chưa được xác nhận email.');
+                        setShowResendButton(true);
+                    } else {
+                        setErrorMsg(data.message || 'Mật khẩu hoặc tài khoản không chính xác!');
+                    }
                 }
             } else {
                 setErrorMsg('Không nhận được dữ liệu JSON từ Backend (Kiểm tra lại Backend).');
@@ -102,6 +113,29 @@ export default function LoginPage() {
             setErrorMsg('Không thể kết nối đến máy chủ Backend!');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleResendVerification = async () => {
+        setResendLoading(true);
+        setResendMessage('');
+        try {
+            const res = await fetch('http://127.0.0.1:5000/api/Auth/resend-verification', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: identifier }),
+            });
+            const data = await res.json().catch(() => null);
+            if (res.ok) {
+                setResendMessage(data?.message || 'Đã gửi lại email xác nhận thành công. Vui lòng kiểm tra hộp thư!');
+            } else {
+                setResendMessage(data?.message || 'Không thể gửi lại email xác nhận.');
+            }
+        } catch (err) {
+            console.error(err);
+            setResendMessage('Lỗi kết nối khi gửi lại email xác nhận.');
+        } finally {
+            setResendLoading(false);
         }
     };
 
@@ -134,11 +168,27 @@ export default function LoginPage() {
 
                         {errorMsg && (
                             <div role="alert" className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 text-xs font-bold rounded-xl text-center">
-                                {errorMsg}
+                                <p>{errorMsg}</p>
+                                {/* Hiển thị nút bấm gửi lại email xác nhận khi dính lỗi EMAIL_NOT_CONFIRMED */}
+                                {showResendButton && (
+                                    <button
+                                        type="button"
+                                        onClick={handleResendVerification}
+                                        disabled={resendLoading}
+                                        className="mt-2 text-xs font-extrabold text-blue-700 underline hover:text-blue-900 block mx-auto disabled:opacity-50"
+                                    >
+                                        {resendLoading ? 'Đang gửi lại...' : 'Gửi lại email xác nhận'}
+                                    </button>
+                                )}
                             </div>
                         )}
 
-                        {/* noValidate: tắt bong bóng cảnh báo mặc định của trình duyệt (tiếng Anh, không chỉnh style được) */}
+                        {resendMessage && (
+                            <div className="mb-4 p-3 bg-blue-50 border border-blue-300 text-blue-800 text-xs font-bold rounded-xl text-center">
+                                {resendMessage}
+                            </div>
+                        )}
+
                         <form className="space-y-4" onSubmit={handleLogin} noValidate>
                             <div>
                                 <label htmlFor="identifier" className="block text-[11px] font-bold text-slate-800 uppercase tracking-wider mb-1">
