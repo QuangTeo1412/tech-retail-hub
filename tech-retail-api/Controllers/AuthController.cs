@@ -7,6 +7,9 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json.Serialization;
+using System.Net;
+using Microsoft.AspNetCore.WebUtilities;
+using ProductManagementAPI.Services;
 
 namespace ProductManagementAPI.Controllers
 {
@@ -17,11 +20,13 @@ namespace ProductManagementAPI.Controllers
     {
         private readonly AppDbContext _context;
         private readonly IConfiguration _configuration;
+        private readonly IEmailService _emailService;
 
-        public AuthController(AppDbContext context, IConfiguration configuration)
+        public AuthController(AppDbContext context, IConfiguration configuration, IEmailService emailService)
         {
             _context = context;
             _configuration = configuration;
+            _emailService = emailService;
         }
 
         [HttpPost("login")]
@@ -61,6 +66,16 @@ namespace ProductManagementAPI.Controllers
             {
                 return BadRequest(new { message = "Tài khoản hoặc mật khẩu không chính xác!" });
             }
+
+            if (!user.EmailConfirmed)
+            {
+                return BadRequest(new
+                {
+                    message = "Email chưa được xác nhận. Vui lòng kiểm tra hộp thư hoặc gửi lại email xác nhận.",
+                    code = "EMAIL_NOT_CONFIRMED"
+                });
+            }
+
 
             var jwtToken = GenerateJwtToken(user);
 
@@ -158,17 +173,23 @@ namespace ProductManagementAPI.Controllers
                 PasswordHash = passwordHash,
                 Username = username,
                 FullName = string.Empty,
-                Role = "User"
+                Role = "User",
+                EmailConfirmed = false,
+                EmailVerificationToken = GenerateToken(),
+                EmailVerificationTokenExpires = DateTime.UtcNow.AddHours(24)
             };
 
             _context.Users.Add(newUser);
             await _context.SaveChangesAsync();
 
+            await SendVerificationEmailAsync(newUser);
+
             return Ok(new
             {
-                message = "Đăng ký tài khoản thành công!",
+                message = "Đăng ký thành công! Vui lòng kiểm tra email để xác nhận tài khoản trước khi đăng nhập.",
                 user = new { newUser.Username, newUser.Email, newUser.PhoneNumber, newUser.Role }
             });
+
         }
 
         private async Task<string> GenerateUniqueUsernameAsync(string email)
@@ -194,6 +215,153 @@ namespace ProductManagementAPI.Controllers
 
             return candidate;
         }
+        [HttpPost("verify-email")]
+        public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailDto request)
+        {
+            var token = request.Token?.Trim();
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                return BadRequest(new { message = "Thiếu mã xác nhận." });
+            }
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.EmailVerificationToken == token);
+            if (user == null)
+            {
+                return BadRequest(new { message = "Mã xác nhận không hợp lệ." });
+            }
+
+            if (user.EmailConfirmed)
+            {
+                return Ok(new { message = "Email này đã được xác nhận trước đó, bạn có thể đăng nhập." });
+            }
+
+            if (user.EmailVerificationTokenExpires == null || user.EmailVerificationTokenExpires < DateTime.UtcNow)
+            {
+                return BadRequest(new { message = "Mã xác nhận đã hết hạn, vui lòng bấm \"Gửi lại email xác nhận\"." });
+            }
+
+            user.EmailConfirmed = true;
+            user.EmailVerificationToken = null;
+            user.EmailVerificationTokenExpires = null;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Xác nhận email thành công! Bạn có thể đăng nhập ngay bây giờ." });
+        }
+
+        [HttpPost("resend-verification")]
+        public async Task<IActionResult> ResendVerification([FromBody] ResendVerificationDto request)
+        {
+            var email = request.Email?.Trim() ?? string.Empty;
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+
+            // Không tiết lộ email có tồn tại trong hệ thống hay không -> luôn trả cùng 1 câu
+            if (user != null && !user.EmailConfirmed)
+            {
+                user.EmailVerificationToken = GenerateToken();
+                user.EmailVerificationTokenExpires = DateTime.UtcNow.AddHours(24);
+                await _context.SaveChangesAsync();
+                await SendVerificationEmailAsync(user);
+            }
+
+            return Ok(new { message = "Nếu email tồn tại và chưa xác nhận, chúng tôi đã gửi lại thư xác nhận." });
+        }
+
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto request)
+        {
+            var email = request.Email?.Trim() ?? string.Empty;
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+
+            if (user != null)
+            {
+                user.PasswordResetToken = GenerateToken();
+                user.PasswordResetTokenExpires = DateTime.UtcNow.AddHours(1);
+                await _context.SaveChangesAsync();
+                await SendPasswordResetEmailAsync(user);
+            }
+
+            // Luôn trả cùng 1 câu, kể cả khi email không tồn tại -> tránh lộ danh sách email trong hệ thống
+            return Ok(new { message = "Nếu email tồn tại trong hệ thống, chúng tôi đã gửi hướng dẫn đặt lại mật khẩu." });
+        }
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto request)
+        {
+            var token = request.Token?.Trim();
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                return BadRequest(new { message = "Thiếu mã đặt lại mật khẩu." });
+            }
+            if (string.IsNullOrWhiteSpace(request.NewPassword) || request.NewPassword.Length < 8)
+            {
+                return BadRequest(new { message = "Mật khẩu mới phải có ít nhất 8 ký tự." });
+            }
+            if (request.ConfirmPassword != request.NewPassword)
+            {
+                return BadRequest(new { message = "Mật khẩu xác nhận không khớp." });
+            }
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.PasswordResetToken == token);
+            if (user == null)
+            {
+                return BadRequest(new { message = "Mã đặt lại mật khẩu không hợp lệ." });
+            }
+
+            if (user.PasswordResetTokenExpires == null || user.PasswordResetTokenExpires < DateTime.UtcNow)
+            {
+                return BadRequest(new { message = "Mã đặt lại mật khẩu đã hết hạn, vui lòng yêu cầu lại." });
+            }
+
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+            user.PasswordResetToken = null;
+            user.PasswordResetTokenExpires = null;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Đặt lại mật khẩu thành công! Vui lòng đăng nhập bằng mật khẩu mới." });
+        }
+
+        private static string GenerateToken()
+        {
+            var bytes = System.Security.Cryptography.RandomNumberGenerator.GetBytes(32);
+            return WebEncoders.Base64UrlEncode(bytes);
+        }
+
+        private async Task SendVerificationEmailAsync(User user)
+        {
+            var baseUrl = _configuration["App:FrontendBaseUrl"] ?? "http://localhost:3000";
+            var link = $"{baseUrl}/verify-email?token={user.EmailVerificationToken}";
+            var body = $@"<p>Xin chào {WebUtility.HtmlEncode(user.Username)},</p>
+                <p>Vui lòng bấm vào liên kết bên dưới để xác nhận email và kích hoạt tài khoản KAITO STORE (liên kết có hiệu lực 24 giờ):</p>
+                <p><a href=""{link}"">{link}</a></p>";
+
+            try
+            {
+                await _emailService.SendEmailAsync(user.Email, "Xác nhận email - KAITO STORE", body);
+            }
+            catch
+            {
+
+            }
+        }
+
+        private async Task SendPasswordResetEmailAsync(User user)
+        {
+            var baseUrl = _configuration["App:FrontendBaseUrl"] ?? "http://localhost:3000";
+            var link = $"{baseUrl}/reset-password?token={user.PasswordResetToken}";
+            var body = $@"<p>Xin chào {WebUtility.HtmlEncode(user.Username)},</p>
+                <p>Bạn (hoặc ai đó) vừa yêu cầu đặt lại mật khẩu cho tài khoản KAITO STORE. Liên kết có hiệu lực trong 1 giờ:</p>
+                <p><a href=""{link}"">{link}</a></p>
+                <p>Nếu không phải bạn yêu cầu, hãy bỏ qua email này.</p>";
+
+            try
+            {
+                await _emailService.SendEmailAsync(user.Email, "Đặt lại mật khẩu - KAITO STORE", body);
+            }
+            catch
+            {
+            }
+        }
+
     }
 
     public class LoginDto

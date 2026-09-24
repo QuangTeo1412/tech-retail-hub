@@ -63,5 +63,10 @@ namespace ProductManagementAPI.Services
             await smtp.SendAsync(email);
             await smtp.DisconnectAsync(true);
         }
+
+        public async Task SendEmailAsync(string toEmail, string subject, string body)
+        {
+            await SendEmailAsync(toEmail, subject, body);
+        }
     }
 }
