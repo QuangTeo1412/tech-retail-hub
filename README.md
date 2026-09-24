@@ -172,4 +172,4 @@ kaito-store/
 
 ## 📄 Giấy Phép (License)
 
-Dự án được phát triển bởi QuangTen1412. Tất cả quyền được bảo lưu.
+Dự án được phát triển bởi QuangTeo1412. Tất cả quyền được bảo lưu.
