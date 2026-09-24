@@ -19,19 +19,15 @@ function VerifyEmailContent() {
     const searchParams = useSearchParams();
     const token = searchParams.get('token');
 
-    const [status, setStatus] = useState<Status>('verifying');
-    const [message, setMessage] = useState('');
+    const [status, setStatus] = useState<Status>(() => (!token ? 'error' : 'verifying'));
+    const [message, setMessage] = useState(() => (!token ? 'Liên kết xác nhận không hợp lệ (thiếu mã token).' : ''));
 
     const [resendEmail, setResendEmail] = useState('');
     const [resendSent, setResendSent] = useState(false);
     const [resendLoading, setResendLoading] = useState(false);
 
     useEffect(() => {
-        if (!token) {
-            setStatus('error');
-            setMessage('Liên kết xác nhận không hợp lệ (thiếu mã token).');
-            return;
-        }
+        if (!token) return;
 
         fetch(`${API_URL}/auth/verify-email`, {
             method: 'POST',
@@ -77,7 +73,7 @@ function VerifyEmailContent() {
 
                 {status === 'success' && (
                     <>
-                        <div className="w-14 h-14 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-4 text-2xl">✓</div>
+                        <div className="w-14 h-14 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-4 text-2xl text-green-600 font-bold">✓</div>
                         <h1 className="text-lg font-extrabold text-slate-900 mb-2">Xác nhận thành công</h1>
                         <p className="text-sm text-slate-600 mb-6">{message}</p>
                         <Link
@@ -91,7 +87,7 @@ function VerifyEmailContent() {
 
                 {status === 'error' && (
                     <>
-                        <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4 text-2xl">!</div>
+                        <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4 text-2xl text-red-600 font-bold">!</div>
                         <h1 className="text-lg font-extrabold text-slate-900 mb-2">Không xác nhận được</h1>
                         <p className="text-sm text-slate-600 mb-6">{message}</p>
 
@@ -107,7 +103,7 @@ function VerifyEmailContent() {
                                     value={resendEmail}
                                     onChange={(e) => setResendEmail(e.target.value)}
                                     placeholder="Nhập email đã đăng ký"
-                                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500"
+                                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500 text-slate-900"
                                 />
                                 <button
                                     type="submit"
