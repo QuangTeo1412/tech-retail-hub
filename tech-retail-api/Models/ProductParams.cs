@@ -17,5 +17,8 @@
         public decimal? MinPrice { get; set; }
         public decimal? MaxPrice { get; set; }
         public string? SortBy { get; set; }
+        public string? Brand { get; set; }
+        public string? Ram { get; set; }
+        public string? Gpu { get; set; }
     }
 }

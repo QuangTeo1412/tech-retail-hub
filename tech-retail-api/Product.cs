@@ -21,6 +21,18 @@ namespace ProductManagementAPI
 
         public string Category { get; set; } = "General";
 
+        [StringLength(50, ErrorMessage = "Tên thương hiệu không được vượt quá 50 ký tự")]
+        public string Brand { get; set; } = string.Empty;
+
+        [StringLength(100)]
+        public string? Cpu { get; set; }
+
+        [StringLength(50)]
+        public string? Ram { get; set; }
+
+        [StringLength(100)]
+        public string? Gpu { get; set; }
+
         public string Description { get; set; } = string.Empty;
 
         [StringLength(500, ErrorMessage = "Đường dẫn ảnh không được vượt quá 500 ký tự")]

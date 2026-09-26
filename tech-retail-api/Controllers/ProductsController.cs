@@ -33,6 +33,23 @@ namespace ProductManagementAPI.Controllers
                 query = query.Where(p => p.Category == productParams.Category);
             }
 
+            if (!string.IsNullOrWhiteSpace(productParams.Brand))
+            {
+                var brandLower = productParams.Brand.ToLower();
+                query = query.Where(p => p.Brand.ToLower() == brandLower);
+            }
+
+            if (!string.IsNullOrWhiteSpace(productParams.Ram))
+            {
+                query = query.Where(p => p.Ram == productParams.Ram);
+            }
+
+            if (!string.IsNullOrWhiteSpace(productParams.Gpu))
+            {
+                var gpuLower = productParams.Gpu.ToLower();
+                query = query.Where(p => p.Gpu != null && p.Gpu.ToLower().Contains(gpuLower));
+            }
+
             if (productParams.MinPrice.HasValue)
             {
                 query = query.Where(p => p.Price >= productParams.MinPrice.Value);
@@ -63,6 +80,48 @@ namespace ProductManagementAPI.Controllers
                 PageSize = productParams.PageSize,
                 TotalPages = (int)Math.Ceiling(totalItems / (double)productParams.PageSize),
                 Data = products
+            });
+        }
+
+        [HttpGet("filters")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetFilterOptions()
+        {
+            var brands = await _context.Products
+                .Where(p => p.Brand != "")
+                .Select(p => p.Brand)
+                .Distinct()
+                .OrderBy(b => b)
+                .ToListAsync();
+
+            var rams = await _context.Products
+                .Where(p => p.Ram != null && p.Ram != "")
+                .Select(p => p.Ram!)
+                .Distinct()
+                .OrderBy(r => r)
+                .ToListAsync();
+
+            var gpus = await _context.Products
+                .Where(p => p.Gpu != null && p.Gpu != "")
+                .Select(p => p.Gpu!)
+                .Distinct()
+                .OrderBy(g => g)
+                .ToListAsync();
+
+            decimal minPrice = 0, maxPrice = 0;
+            if (await _context.Products.AnyAsync())
+            {
+                minPrice = await _context.Products.MinAsync(p => p.Price);
+                maxPrice = await _context.Products.MaxAsync(p => p.Price);
+            }
+
+            return Ok(new
+            {
+                Brands = brands,
+                Rams = rams,
+                Gpus = gpus,
+                MinPrice = minPrice,
+                MaxPrice = maxPrice
             });
         }
 
@@ -165,17 +224,6 @@ namespace ProductManagementAPI.Controllers
 
             return NoContent();
         }
-
-        private static bool IsValidsImageUrl(string url)
-        {
-            if (url.StartsWith("/uploads/", StringComparison.Ordinal))
-            {
-                return !url.Contains("..");
-            }
-
-            return Uri.TryCreate(url, UriKind.Absolute, out var uri)
-                   && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
-        }
         private static bool IsValidImageUrl(string url)
         {
             if (url.StartsWith("/uploads/", StringComparison.Ordinal))
@@ -191,5 +239,5 @@ namespace ProductManagementAPI.Controllers
     public class SetImageRequest
     {
         public string ImageUrl { get; set; } = string.Empty;
-    }
+    }   
 }
