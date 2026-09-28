@@ -1,4 +1,5 @@
 ﻿import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { NO_SCROLLBAR } from '../app/lib/data';
 import type { StoredUser } from '../app/lib/hooks';
 
@@ -11,6 +12,14 @@ interface HeaderProps {
 }
 
 export default function Header({ user, cartCount, searchQuery, onSearchChange, onLogout }: HeaderProps) {
+    const router = useRouter();
+
+    const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        const q = searchQuery.trim();
+        if (q) router.push(`/search?q=${encodeURIComponent(q)}`);
+    };
+
     return (
         <header className="bg-white border-b border-gray-100 sticky top-0 z-50 shadow-sm">
             <div className="max-w-7xl mx-auto px-4 py-3.5 flex items-center justify-between gap-4">
@@ -18,7 +27,7 @@ export default function Header({ user, cartCount, searchQuery, onSearchChange, o
                     KAITO STORE
                 </Link>
 
-                <div className="flex-1 max-w-2xl relative">
+                <form role="search" onSubmit={handleSearchSubmit} className="flex-1 max-w-2xl relative">
                     <input
                         type="text"
                         value={searchQuery}
@@ -27,8 +36,14 @@ export default function Header({ user, cartCount, searchQuery, onSearchChange, o
                         placeholder="Bạn cần tìm laptop, linh kiện gì hôm nay?..."
                         className="w-full bg-gray-100/80 border border-gray-200 rounded-full py-2.5 pl-5 pr-10 text-sm focus:outline-none focus:bg-white focus:border-blue-500 transition-all placeholder:text-gray-400"
                     />
-                    <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-base opacity-60 pointer-events-none">🔍</span>
-                </div>
+                    <button
+                        type="submit"
+                        aria-label="Tìm kiếm"
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-base opacity-60 hover:opacity-100 transition-opacity"
+                    >
+                        🔍
+                    </button>
+                </form>
 
                 <div className="flex items-center gap-5 flex-shrink-0">
                     <Link href="/cart" aria-label="Giỏ hàng" className="relative p-2 text-gray-700 hover:text-blue-600 transition-colors">
