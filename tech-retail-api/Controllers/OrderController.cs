@@ -83,34 +83,7 @@ namespace ProductManagementAPI.Controllers
 
             await _context.SaveChangesAsync();
 
-            // Gửi thư xác nhận tới email của CHÍNH người đặt hàng (trước đây gán cứng một địa chỉ Gmail)
-            var user = await _context.Users.FindAsync(userId);
-            if (user != null && !string.IsNullOrWhiteSpace(user.Email))
-            {
-                _ = SendConfirmationEmailAsync(user.Email, order.Id, order.TotalAmount);
-            }
-            else
-            {
-                _logger.LogWarning("Đơn {OrderId}: người dùng {UserId} chưa có email nên không gửi thư xác nhận.", order.Id, userId);
-            }
-
             return Ok(new { Message = "Đặt hàng thành công!", OrderId = order.Id, Total = order.TotalAmount });
-        }
-
-        /// <summary>
-        /// Gửi thư ở nền để không làm chậm việc đặt hàng. Lỗi (nếu có) được ghi vào log thay vì bị nuốt mất.
-        /// </summary>
-        private async Task SendConfirmationEmailAsync(string toEmail, int orderId, decimal totalAmount)
-        {
-            try
-            {
-                await _emailService.SendOrderConfirmationEmailAsync(toEmail, orderId, totalAmount);
-                _logger.LogInformation("Đã gửi thư xác nhận đặt hàng #{OrderId} tới {Email}.", orderId, toEmail);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Gửi thư xác nhận đặt hàng #{OrderId} thất bại.", orderId);
-            }
         }
 
         [HttpGet("my-orders")]
