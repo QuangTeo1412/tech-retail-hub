@@ -11,6 +11,19 @@ namespace ProductManagementAPI.Services
         {
             _config = config;
         }
+
+        public async Task SendOrderConfirmationEmailAsync(string toEmail, int orderId, decimal totalAmount)
+        {
+            string subject = $"[Kaito Store] Xác nhận đơn hàng #{orderId}";
+            string htmlBody = $@"
+                    <div style='font-family: Arial, sans-serif; padding: 20px;'>
+                        <h2 style='color: #1e40af;'>Xác nhận đơn hàng!</h2>
+                        <p>Cảm ơn bạn đã đặt hàng tại Kaito Store. Chúng tôi đã nhận được đơn hàng <b>#{orderId}</b>.</p>
+                        <p>Tổng số tiền: <b style='color: #1e40af;'>{totalAmount:N0} VNĐ</b></p>
+                        <p>Chúng tôi sẽ xử lý đơn hàng của bạn và gửi thông báo khi đơn hàng được giao.</p>
+                    </div>";
+            await SendAsync(toEmail, subject, htmlBody);
+        }
         public async Task SendPaymentSuccessEmailAsync(string toEmail, int orderId, decimal totalAmount)
         {
             string subject = $"[Kaito Store] Thanh toán thành công đơn hàng #{orderId}";

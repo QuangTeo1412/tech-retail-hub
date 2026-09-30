@@ -1,11 +1,14 @@
-﻿using System.Net;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using ProductManagementAPI.Models;
+using ProductManagementAPI.Services;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using ProductManagementAPI.Models;
-using ProductManagementAPI.Services;
 
 namespace ProductManagementAPI.Controllers
 {
@@ -33,7 +36,7 @@ namespace ProductManagementAPI.Controllers
         private int GetUserIdFromToken()
         {
             var userIdClaim = User.FindFirst("userId")?.Value
-                              ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                            ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             return int.TryParse(userIdClaim, out int userId) ? userId : 0;
         }
@@ -102,7 +105,11 @@ namespace ProductManagementAPI.Controllers
                 return RedirectToResult("invalid");
             }
 
-            var order = await _context.Orders.FindAsync(orderId);
+            var order = await _context.Orders
+                .Include(o => o.OrderItems)
+                .ThenInclude(oi => oi.Product)
+                .FirstOrDefaultAsync(o => o.Id == orderId);
+
             if (order == null)
             {
                 return RedirectToResult("invalid");
@@ -125,6 +132,22 @@ namespace ProductManagementAPI.Controllers
 
             if (!isSuccess)
             {
+                if (order.Status == "Pending")
+                {
+                    order.Status = "Cancelled";
+
+                    foreach (var item in order.OrderItems)
+                    {
+                        if (item.Product != null)
+                        {
+                            item.Product.Stock += item.Quantity;
+                        }
+                    }
+
+                    await _context.SaveChangesAsync();
+                    _logger.LogInformation("Đơn hàng #{OrderId} đã bị hủy do thanh toán thất bại/bị hủy, đã hoàn lại tồn kho.", orderId);
+                }
+
                 return RedirectToResult("failed", orderId);
             }
 
@@ -138,7 +161,7 @@ namespace ProductManagementAPI.Controllers
             else
             {
                 _logger.LogInformation(
-                    "Đơn {OrderId} đã ở trạng thái Processing từ trước nên không gửi lại email. Hãy thử bằng đơn mới (Pending).",
+                    "Đơn {OrderId} đã ở trạng thái Processing từ trước nên không gửi lại email.",
                     orderId);
             }
 
