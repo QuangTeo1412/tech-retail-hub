@@ -25,7 +25,7 @@ namespace ProductManagementAPI.Controllers
 
         private int GetUserIdFromToken()
         {
-            // "userId" là claim riêng do AuthController tạo, không bị đổi tên khi đọc token nên đọc trước
+
             var userIdClaim = User.FindFirst("userId")?.Value
                               ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value
                               ?? User.FindFirst("id")?.Value
