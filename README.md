@@ -64,8 +64,8 @@ KaitoStore là dự án thương mại điện tử chuyên cung cấp các dòn
 ## 📌 Chưa Làm / Kế Hoạch Tiếp Theo (Roadmap)
 
 **Mua sắm**
-- [ ] Trang chi tiết sản phẩm (Product Detail).
-- [ ] Lọc sản phẩm theo thương hiệu, mức giá, cấu hình (hiện chỉ tìm theo tên).
+- [✔] Trang chi tiết sản phẩm (Product Detail).
+- [✔] Lọc sản phẩm theo thương hiệu, mức giá, cấu hình (hiện chỉ tìm theo tên).
 - [ ] Tăng/giảm số lượng ngay trong giỏ hàng (hiện chỉ thêm 1 hoặc xóa hẳn).
 - [ ] Trang "Đơn hàng của tôi" cho khách xem lại đơn đã đặt (API `GET /api/Order/my-orders` đã có, chưa có giao diện).
 - [ ] Mã giảm giá, flash sale, sản phẩm nổi bật do admin tự chọn.
