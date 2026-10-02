@@ -1,4 +1,5 @@
 ﻿import { Suspense } from 'react';
+import { Be_Vietnam_Pro } from 'next/font/google';
 import SearchHeader from '@/components/search/SearchHeader';
 import Footer from '@/components/Footer';
 import ProductGrid from '@/components/search/ProductGrid';
@@ -8,6 +9,13 @@ import SortSelect from '@/components/search/SortSelect';
 import FilterSidebar from '@/components/search/FilterSidebar';
 import { fetchProducts, fetchFilterOptions, DEFAULT_PAGE_SIZE, type SortOption } from '@/app/lib/products';
 
+// Khai báo 1 lần ở đây và áp cho thẻ ngoài cùng là đủ, mọi component con (Header, FilterSidebar,
+const beVietnam = Be_Vietnam_Pro({
+    subsets: ['vietnamese', 'latin'],
+    weight: ['400', '500', '600', '700', '800'],
+    display: 'swap',
+});
+
 interface SearchPageProps {
     searchParams: Promise<{
         q?: string;
@@ -15,7 +23,6 @@ interface SearchPageProps {
         page?: string;
         brand?: string;
         ram?: string;
-        gpu?: string;
         minPrice?: string;
         maxPrice?: string;
     }>;
@@ -39,7 +46,6 @@ interface Filters {
     page: number;
     brand?: string;
     ram?: string;
-    gpu?: string;
     minPrice?: number;
     maxPrice?: number;
 }
@@ -51,7 +57,6 @@ function buildHref(base: Filters, overrides: Partial<Filters>) {
     if (merged.sort !== 'newest') params.set('sort', merged.sort);
     if (merged.brand) params.set('brand', merged.brand);
     if (merged.ram) params.set('ram', merged.ram);
-    if (merged.gpu) params.set('gpu', merged.gpu);
     if (merged.minPrice != null) params.set('minPrice', String(merged.minPrice));
     if (merged.maxPrice != null) params.set('maxPrice', String(merged.maxPrice));
     if (merged.page && merged.page > 1) params.set('page', String(merged.page));
@@ -65,7 +70,6 @@ async function SearchResults({ filters }: { filters: Filters }) {
                 search: filters.q || undefined,
                 brand: filters.brand,
                 ram: filters.ram,
-                gpu: filters.gpu,
                 minPrice: filters.minPrice,
                 maxPrice: filters.maxPrice,
                 sort: filters.sort,
@@ -82,7 +86,6 @@ async function SearchResults({ filters }: { filters: Filters }) {
                     selected={{
                         brand: filters.brand,
                         ram: filters.ram,
-                        gpu: filters.gpu,
                         minPrice: filters.minPrice,
                         maxPrice: filters.maxPrice,
                     }}
@@ -125,7 +128,6 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         page: Math.max(1, Number(params.page) || 1),
         brand: params.brand || undefined,
         ram: params.ram || undefined,
-        gpu: params.gpu || undefined,
         minPrice: parseNumber(params.minPrice),
         maxPrice: parseNumber(params.maxPrice),
     };
@@ -134,13 +136,12 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         filters.q ||
         filters.brand ||
         filters.ram ||
-        filters.gpu ||
         filters.minPrice != null ||
         filters.maxPrice != null
     );
 
     return (
-        <div className="min-h-screen bg-[#f8f9fa] text-slate-800 flex flex-col justify-between">
+        <div className={`${beVietnam.className} min-h-screen bg-[#f8f9fa] text-slate-800 antialiased flex flex-col justify-between`}>
             <div>
                 <SearchHeader initialQuery={filters.q} />
 

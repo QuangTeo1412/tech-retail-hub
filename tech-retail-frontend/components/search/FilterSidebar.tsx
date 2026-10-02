@@ -28,7 +28,7 @@ function FilterGroup({
     if (items.length === 0) return null;
     return (
         <div>
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 mb-3">{title}</h3>
+            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-800 mb-3">{title}</h3>
             <ul className="space-y-2">
                 {items.map((item) => (
                     <li key={item}>
@@ -60,7 +60,7 @@ export default function FilterSidebar({ options, selected }: FilterSidebarProps)
         router.push(`${pathname}?${params.toString()}`);
     };
 
-    const toggle = (key: 'brand' | 'ram' | 'gpu', value: string) => {
+    const toggle = (key: 'brand' | 'ram', value: string) => {
         navigate((params) => {
             if (selected[key] === value) params.delete(key);
             else params.set(key, value);
@@ -82,16 +82,17 @@ export default function FilterSidebar({ options, selected }: FilterSidebarProps)
 
     const clearAll = () => {
         navigate((params) => {
+            // vẫn xóa "gpu" ở đây để dọn sạch những đường link cũ còn sót lại tham số này
             ['brand', 'ram', 'gpu', 'minPrice', 'maxPrice'].forEach((k) => params.delete(k));
         });
     };
 
-    const hasActiveFilter = !!(selected.brand || selected.ram || selected.gpu || selected.minPrice != null || selected.maxPrice != null);
+    const hasActiveFilter = !!(selected.brand || selected.ram || selected.minPrice != null || selected.maxPrice != null);
 
     return (
         <aside className="w-full lg:w-64 flex-shrink-0 space-y-6">
             <div className="flex items-center justify-between">
-                <h2 className="text-sm font-extrabold text-slate-900">Bộ lọc</h2>
+                <h2 className="text-lg font-extrabold text-slate-900">Bộ lọc</h2>
                 {hasActiveFilter && (
                     <button type="button" onClick={clearAll} className="text-xs font-bold text-blue-600 hover:underline">
                         Xoá tất cả
@@ -102,7 +103,7 @@ export default function FilterSidebar({ options, selected }: FilterSidebarProps)
             <FilterGroup title="Thương hiệu" items={options.brands} selectedValue={selected.brand} onToggle={(v) => toggle('brand', v)} />
 
             <div>
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 mb-3">Khoảng giá</h3>
+                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-800 mb-3">Khoảng giá</h3>
                 <form onSubmit={handlePriceSubmit} className="flex items-center gap-2">
                     <input
                         type="number"
@@ -133,7 +134,6 @@ export default function FilterSidebar({ options, selected }: FilterSidebarProps)
             </div>
 
             <FilterGroup title="RAM" items={options.rams} selectedValue={selected.ram} onToggle={(v) => toggle('ram', v)} />
-            <FilterGroup title="Card đồ họa" items={options.gpus} selectedValue={selected.gpu} onToggle={(v) => toggle('gpu', v)} />
         </aside>
     );
 }
