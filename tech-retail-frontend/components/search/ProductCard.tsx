@@ -1,8 +1,14 @@
-﻿import Link from 'next/link';
+import Link from 'next/link';
 import type { Product } from '@/app/lib/products';
 import { currencyFormatter, resolveImageUrl } from '@/app/lib/products';
 
-export default function ProductCard({ product }: { product: Product }) {
+interface ProductCardProps {
+    product: Product;
+    adding: boolean;
+    onAdd: (product: Product) => void | Promise<void>;
+}
+
+export default function ProductCard({ product, adding, onAdd }: ProductCardProps) {
     const outOfStock = product.stock <= 0;
     const imageSrc = resolveImageUrl(product.imageUrl);
     const specs = [product.ram, product.gpu].filter(Boolean) as string[];
@@ -47,20 +53,27 @@ export default function ProductCard({ product }: { product: Product }) {
                 )}
             </Link>
 
-            <div className="mt-4">
-                <span className="text-base font-extrabold text-blue-600 block mb-3">
+            <div className="mt-4 space-y-2">
+                <span className="text-base font-extrabold text-blue-600 block">
                     {currencyFormatter.format(product.price)}
                 </span>
 
+                {/* Hành động chính: thêm vào giỏ hàng, cùng kiểu nút với trang chủ */}
+                <button
+                    type="button"
+                    disabled={outOfStock || adding}
+                    onClick={() => onAdd(product)}
+                    className="w-full bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white font-bold text-xs py-2.5 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-50 disabled:hover:text-blue-600"
+                >
+                    {outOfStock ? 'Hết hàng' : adding ? 'Đang thêm...' : 'Thêm vào giỏ hàng'}
+                </button>
+
+                {/* Hành động phụ: xem chi tiết */}
                 <Link
                     href={`/products/${product.id}`}
-                    aria-disabled={outOfStock}
-                    className={`block text-center w-full font-bold text-xs py-2.5 rounded-xl transition-all ${outOfStock
-                            ? 'bg-gray-100 text-gray-400 pointer-events-none'
-                            : 'bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white'
-                        }`}
+                    className="block text-center w-full font-bold text-xs py-2 rounded-xl border border-gray-200 text-slate-600 hover:border-blue-600 hover:text-blue-600 transition-all"
                 >
-                    {outOfStock ? 'Hết hàng' : 'Xem chi tiết'}
+                    Xem chi tiết
                 </Link>
             </div>
         </div>

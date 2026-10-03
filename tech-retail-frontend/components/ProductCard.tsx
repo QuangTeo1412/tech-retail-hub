@@ -1,4 +1,5 @@
-﻿import { formatVnd, resolveImageUrl, type Product } from '../app/lib/api';
+﻿import Link from 'next/link';
+import { formatVnd, resolveImageUrl, type Product } from '../app/lib/api';
 
 interface ProductCardProps {
     item: Product;
@@ -12,7 +13,7 @@ export default function ProductCard({ item, adding, onAdd }: ProductCardProps) {
 
     return (
         <div className="w-[280px] flex-shrink-0 snap-start bg-white rounded-2xl p-4 border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col justify-between group">
-            <div>
+            <Link href={`/products/${item.id}`} className="block">
                 <div className="relative h-44 rounded-xl overflow-hidden mb-3 bg-gray-50 border border-gray-100">
                     {outOfStock && (
                         <span className="absolute top-2 left-2 z-10 bg-slate-800 text-white text-[9px] font-bold px-2 py-0.5 rounded uppercase">
@@ -38,10 +39,10 @@ export default function ProductCard({ item, adding, onAdd }: ProductCardProps) {
                 <h3 className="text-xs font-bold text-slate-800 line-clamp-2 min-h-[32px] group-hover:text-blue-600 transition-colors leading-snug">
                     {item.name}
                 </h3>
-            </div>
+            </Link>
 
-            <div className="mt-4">
-                <span className="text-base font-extrabold text-blue-600 block mb-3">{formatVnd(item.price)}</span>
+            <div className="mt-4 space-y-2">
+                <span className="text-base font-extrabold text-blue-600 block">{formatVnd(item.price)}</span>
 
                 <button
                     type="button"
@@ -51,6 +52,13 @@ export default function ProductCard({ item, adding, onAdd }: ProductCardProps) {
                 >
                     {outOfStock ? 'Hết hàng' : adding ? 'Đang thêm...' : 'Thêm vào giỏ hàng'}
                 </button>
+
+                <Link
+                    href={`/products/${item.id}`}
+                    className="block text-center w-full font-bold text-xs py-2 rounded-xl border border-gray-200 text-slate-600 hover:border-blue-600 hover:text-blue-600 transition-all"
+                >
+                    Xem chi tiết
+                </Link>
             </div>
         </div>
     );
