@@ -49,6 +49,7 @@ namespace ProductManagementAPI.Controllers
                     ProductName = c.Product!.Name,
                     ProductPrice = c.Product.Price,
                     ProductImageUrl = c.Product.ImageUrl,
+                    ProductStock = c.Product.Stock,
                     c.Quantity,
                     TotalPrice = c.Quantity * c.Product.Price
                 })
@@ -88,6 +89,39 @@ namespace ProductManagementAPI.Controllers
 
             await _context.SaveChangesAsync();
             return Ok(new { Message = "Đã thêm vào giỏ hàng thành công!" });
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateQuantity(int id, [FromQuery] int quantity)
+        {
+            var userId = GetUserIdFromToken();
+            if (userId == 0) return Unauthorized(new { message = "Token không hợp lệ hoặc thiếu Id người dùng. Vui lòng đăng nhập lại." });
+
+            if (quantity < 1)
+                return BadRequest(new { message = "Số lượng phải từ 1 trở lên. Để xóa sản phẩm, vui lòng dùng chức năng Xóa." });
+
+            var cartItem = await _context.CartItems
+                .Include(c => c.Product)
+                .FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId);
+
+            if (cartItem == null) return NotFound(new { message = "Món hàng không có trong giỏ." });
+            if (cartItem.Product == null) return BadRequest(new { message = "Sản phẩm không còn tồn tại." });
+
+            if (quantity > cartItem.Product.Stock)
+            {
+                return BadRequest(new { message = $"Chỉ còn {cartItem.Product.Stock} sản phẩm '{cartItem.Product.Name}' trong kho." });
+            }
+
+            cartItem.Quantity = quantity;
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                Message = "Đã cập nhật số lượng.",
+                Id = cartItem.Id,
+                Quantity = cartItem.Quantity,
+                TotalPrice = cartItem.Quantity * cartItem.Product.Price
+            });
         }
 
         [HttpDelete("remove/{id}")]

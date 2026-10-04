@@ -34,19 +34,22 @@ namespace ProductManagementAPI.Controllers
         }
 
         [HttpPost("checkout")]
-        public async Task<IActionResult> Checkout()
+        public async Task<IActionResult> Checkout([FromBody] CheckoutRequestDto request)
         {
             var userId = GetUserIdFromToken();
             if (userId == 0)
                 return Unauthorized(new { Message = "Token không hợp lệ hoặc thiếu Id người dùng. Vui lòng đăng nhập lại." });
 
+            if (request.CartItemIds == null || request.CartItemIds.Count == 0)
+                return BadRequest(new { Message = "Vui lòng chọn ít nhất một sản phẩm để thanh toán." });
+
             var cartItems = await _context.CartItems
                 .Include(c => c.Product)
-                .Where(c => c.UserId == userId)
+                .Where(c => c.UserId == userId && request.CartItemIds.Contains(c.Id))
                 .ToListAsync();
 
             if (!cartItems.Any())
-                return BadRequest("Giỏ hàng của bạn đang trống.");
+                return BadRequest(new { Message = "Không tìm thấy sản phẩm đã chọn trong giỏ hàng." });
 
             foreach (var item in cartItems)
             {
@@ -103,10 +106,6 @@ namespace ProductManagementAPI.Controllers
             return Ok(orders);
         }
 
-        /// <summary>
-        /// Admin xem TẤT CẢ đơn hàng (khác /my-orders chỉ trả đơn của người đang đăng nhập).
-        /// Lọc theo trạng thái bằng ?status=Pending (bỏ trống để xem tất cả).
-        /// </summary>
         [HttpGet("all")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetAllOrders([FromQuery] string? status = null)
@@ -158,5 +157,10 @@ namespace ProductManagementAPI.Controllers
 
             return Ok(new { Message = $"Cập nhật trạng thái đơn hàng #{id} thành '{newStatus}' thành công!" });
         }
+    }
+
+    public class CheckoutRequestDto
+    {
+        public List<int> CartItemIds { get; set; } = new();
     }
 }

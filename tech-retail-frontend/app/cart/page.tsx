@@ -18,6 +18,7 @@ interface CartItem {
     productName: string;
     productPrice: number;
     productImageUrl?: string | null;
+    productStock: number;
     quantity: number;
     totalPrice: number;
 }
@@ -33,7 +34,6 @@ function CartItemImage({ item }: { item: CartItem }) {
     return (
         <div className="relative w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden bg-white border border-gray-100">
             {image ? (
-
                 <img
                     src={image}
                     alt={item.productName}
@@ -49,12 +49,48 @@ function CartItemImage({ item }: { item: CartItem }) {
     );
 }
 
+function QuantityStepper({
+    item,
+    disabled,
+    onChange,
+}: {
+    item: CartItem;
+    disabled: boolean;
+    onChange: (nextQty: number) => void;
+}) {
+    return (
+        <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden flex-shrink-0">
+            <button
+                type="button"
+                onClick={() => onChange(item.quantity - 1)}
+                disabled={disabled || item.quantity <= 1}
+                aria-label={`Giảm số lượng ${item.productName}`}
+                className="w-7 h-7 flex items-center justify-center text-slate-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+                −
+            </button>
+            <span className="w-8 text-center text-sm font-bold">{item.quantity}</span>
+            <button
+                type="button"
+                onClick={() => onChange(item.quantity + 1)}
+                disabled={disabled || item.quantity >= item.productStock}
+                aria-label={`Tăng số lượng ${item.productName}`}
+                className="w-7 h-7 flex items-center justify-center text-slate-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+                +
+            </button>
+        </div>
+    );
+}
+
 export default function CartPage() {
     const router = useRouter();
     const [items, setItems] = useState<CartItem[]>([]);
+    const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [removingId, setRemovingId] = useState<number | null>(null);
+    const [updatingId, setUpdatingId] = useState<number | null>(null);
     const [paying, setPaying] = useState(false);
     const [pendingOrderId, setPendingOrderId] = useState<number | null>(null);
 
@@ -80,7 +116,10 @@ export default function CartPage() {
         (async () => {
             try {
                 const data = await apiFetch<CartItem[]>('/api/Cart');
-                if (!cancelled) setItems(data);
+                if (!cancelled) {
+                    setItems(data);
+                    setSelectedIds(new Set(data.map((item) => item.id)));
+                }
             } catch (err) {
                 if (cancelled) return;
                 if (err instanceof ApiError && err.status === 401) {
@@ -107,12 +146,30 @@ export default function CartPage() {
         return () => window.removeEventListener('pageshow', onPageShow);
     }, []);
 
+    const toggleSelect = (id: number) => {
+        setSelectedIds((prev) => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    };
+
+    const toggleSelectAll = () => {
+        setSelectedIds((prev) => (prev.size === items.length ? new Set() : new Set(items.map((i) => i.id))));
+    };
+
     const handleRemove = async (id: number) => {
         setRemovingId(id);
         setError('');
         try {
             await apiFetch(`/api/Cart/remove/${id}`, { method: 'DELETE' });
             setItems((prev) => prev.filter((item) => item.id !== id));
+            setSelectedIds((prev) => {
+                const next = new Set(prev);
+                next.delete(id);
+                return next;
+            });
         } catch (err) {
             if (!handleAuthError(err)) {
                 setError(err instanceof Error ? err.message : 'Không thể xóa sản phẩm.');
@@ -122,17 +179,48 @@ export default function CartPage() {
         }
     };
 
+    const handleQuantityChange = async (item: CartItem, nextQty: number) => {
+        if (nextQty < 1 || nextQty > item.productStock) return;
+
+        setUpdatingId(item.id);
+        setError('');
+        try {
+            const res = await apiFetch<{ quantity: number; totalPrice: number }>(
+                `/api/Cart/${item.id}?quantity=${nextQty}`,
+                { method: 'PUT' }
+            );
+            setItems((prev) =>
+                prev.map((i) => (i.id === item.id ? { ...i, quantity: res.quantity, totalPrice: res.totalPrice } : i))
+            );
+        } catch (err) {
+            if (!handleAuthError(err)) {
+                setError(err instanceof Error ? err.message : 'Không thể cập nhật số lượng.');
+            }
+        } finally {
+            setUpdatingId(null);
+        }
+    };
+
     const handlePay = async () => {
+        if (selectedIds.size === 0) {
+            setError('Vui lòng chọn ít nhất một sản phẩm để thanh toán.');
+            return;
+        }
+
         setPaying(true);
         setError('');
         try {
             let orderId = pendingOrderId;
 
             if (orderId === null) {
-                const order = await apiFetch<{ orderId: number }>('/api/Order/checkout', { method: 'POST' });
+                const order = await apiFetch<{ orderId: number }>('/api/Order/checkout', {
+                    method: 'POST',
+                    body: JSON.stringify({ cartItemIds: Array.from(selectedIds) }),
+                });
                 orderId = order.orderId;
                 setPendingOrderId(orderId);
-                setItems([]);
+                setItems((prev) => prev.filter((i) => !selectedIds.has(i.id)));
+                setSelectedIds(new Set());
             }
 
             const { paymentUrl } = await apiFetch<{ paymentUrl: string }>(
@@ -148,8 +236,10 @@ export default function CartPage() {
         }
     };
 
-    const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
-    const totalPrice = items.reduce((sum, item) => sum + item.totalPrice, 0);
+    const selectedItems = items.filter((item) => selectedIds.has(item.id));
+    const totalQuantity = selectedItems.reduce((sum, item) => sum + item.quantity, 0);
+    const totalPrice = selectedItems.reduce((sum, item) => sum + item.totalPrice, 0);
+    const allSelected = items.length > 0 && selectedIds.size === items.length;
 
     return (
         <div className={`${beVietnam.className} min-h-screen bg-[#f8f9fa] text-slate-800 antialiased`}>
@@ -225,40 +315,73 @@ export default function CartPage() {
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-                        <ul className="lg:col-span-2 space-y-3">
-                            {items.map((item) => (
-                                <li
-                                    key={item.id}
-                                    className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex items-center gap-4"
-                                >
-                                    <CartItemImage item={item} />
-                                    <div className="flex-1 min-w-0">
-                                        <h2 className="text-sm font-bold text-slate-900 line-clamp-2">{item.productName}</h2>
-                                        <p className="text-xs text-gray-500 mt-1">
-                                            {formatVnd(item.productPrice)} × {item.quantity}
-                                        </p>
-                                    </div>
-                                    <div className="text-sm font-extrabold text-blue-600 whitespace-nowrap">
-                                        {formatVnd(item.totalPrice)}
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => handleRemove(item.id)}
-                                        disabled={removingId === item.id || paying}
-                                        aria-label={`Xóa ${item.productName} khỏi giỏ hàng`}
-                                        className="text-xs font-bold text-red-500 hover:text-red-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        <div className="lg:col-span-2 space-y-3">
+                            {/* Chọn tất cả */}
+                            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-4 py-3 flex items-center gap-3">
+                                <input
+                                    type="checkbox"
+                                    id="select-all"
+                                    checked={allSelected}
+                                    onChange={toggleSelectAll}
+                                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                />
+                                <label htmlFor="select-all" className="text-sm font-bold text-slate-700 cursor-pointer">
+                                    Tất cả ({items.length})
+                                </label>
+                            </div>
+
+                            <ul className="space-y-3">
+                                {items.map((item) => (
+                                    <li
+                                        key={item.id}
+                                        className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex items-center gap-3"
                                     >
-                                        {removingId === item.id ? 'Đang xóa...' : 'Xóa'}
-                                    </button>
-                                </li>
-                            ))}
-                        </ul>
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedIds.has(item.id)}
+                                            onChange={() => toggleSelect(item.id)}
+                                            aria-label={`Chọn ${item.productName}`}
+                                            className="w-4 h-4 flex-shrink-0 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                        />
+
+                                        <CartItemImage item={item} />
+
+                                        <div className="flex-1 min-w-0">
+                                            <h2 className="text-sm font-bold text-slate-900 line-clamp-2">{item.productName}</h2>
+                                            <p className="text-xs text-gray-500 mt-1">{formatVnd(item.productPrice)}</p>
+                                        </div>
+
+                                        <QuantityStepper
+                                            item={item}
+                                            disabled={updatingId === item.id || paying}
+                                            onChange={(nextQty) => handleQuantityChange(item, nextQty)}
+                                        />
+
+                                        <div className="text-sm font-extrabold text-blue-600 whitespace-nowrap w-28 text-right">
+                                            {formatVnd(item.totalPrice)}
+                                        </div>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRemove(item.id)}
+                                            disabled={removingId === item.id || paying}
+                                            aria-label={`Xóa ${item.productName} khỏi giỏ hàng`}
+                                            className="text-xs font-bold text-red-500 hover:text-red-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
+                                        >
+                                            {removingId === item.id ? 'Đang xóa...' : 'Xóa'}
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
 
                         <aside className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
                             <h2 className="text-sm font-extrabold text-slate-900 uppercase tracking-wide mb-4">Tóm tắt đơn hàng</h2>
                             <div className="flex justify-between text-sm text-slate-600 mb-2">
-                                <span>Số sản phẩm</span>
-                                <span className="font-bold text-slate-800">{totalQuantity}</span>
+                                <span>Đã chọn</span>
+                                <span className="font-bold text-slate-800">
+                                    {selectedItems.length}/{items.length} sản phẩm ({totalQuantity} cái)
+                                </span>
                             </div>
                             <div className="flex justify-between items-baseline border-t border-gray-100 pt-3 mt-3">
                                 <span className="text-sm font-bold text-slate-800">Tổng cộng</span>
@@ -267,7 +390,7 @@ export default function CartPage() {
                             <button
                                 type="button"
                                 onClick={handlePay}
-                                disabled={paying}
+                                disabled={paying || selectedIds.size === 0}
                                 className="w-full mt-5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm py-3 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {paying ? 'Đang chuyển tới VNPay...' : 'Đặt hàng & thanh toán VNPay'}
