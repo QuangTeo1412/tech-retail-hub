@@ -73,6 +73,12 @@ export default function Header({ user, cartCount, searchQuery, onSearchChange, o
                                     className="w-8 h-8 rounded-full object-cover"
                                 />
                                 <span className="text-xs font-bold text-slate-700">{user.username}</span>
+                                <Link
+                                    href="/orders"
+                                    className="text-xs font-semibold text-slate-600 hover:text-blue-600 ml-1 transition-colors"
+                                >
+                                    Tra Cứu Đơn Hàng
+                                </Link>
                                 <button
                                     onClick={onLogout}
                                     className="text-xs font-semibold text-red-500 hover:text-red-700 ml-1 transition-colors"
