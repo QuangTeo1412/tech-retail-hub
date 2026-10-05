@@ -82,7 +82,6 @@ export default function FilterSidebar({ options, selected }: FilterSidebarProps)
 
     const clearAll = () => {
         navigate((params) => {
-            // vẫn xóa "gpu" ở đây để dọn sạch những đường link cũ còn sót lại tham số này
             ['brand', 'ram', 'gpu', 'minPrice', 'maxPrice'].forEach((k) => params.delete(k));
         });
     };

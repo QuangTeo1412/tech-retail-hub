@@ -41,7 +41,7 @@ export default function ForgotPasswordPage() {
                 const data = await res.json().catch(() => null);
                 throw new Error(data?.message ?? 'Có lỗi xảy ra, vui lòng thử lại.');
             }
-            // Backend luôn trả cùng 1 thông điệp dù email có tồn tại hay không -> không lộ dữ liệu người dùng
+
             setSent(true);
         } catch (err: unknown) {
             if (err instanceof TypeError) setError('Không kết nối được tới máy chủ, vui lòng thử lại sau.');

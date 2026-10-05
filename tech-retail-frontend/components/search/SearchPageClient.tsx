@@ -46,8 +46,7 @@ interface SearchPageClientProps {
     error: string | null;
 }
 
-// Gom Header + khu kết quả vào 1 client component để cartCount (badge trên Header)
-// và nút "Thêm vào giỏ hàng" trong grid dùng chung một state, giống cách app/page.tsx đang làm.
+
 export default function SearchPageClient({ filters, hasAnyFilter, result, filterOptions, error }: SearchPageClientProps) {
     const router = useRouter();
     const [searchQuery, setSearchQuery] = useState(filters.q);

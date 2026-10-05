@@ -1,9 +1,5 @@
-﻿// Đặt tại app/lib/products.ts (cạnh api.ts, data.ts, hooks.ts của bạn).
-// File này tự chứa: không import gì từ api.ts nên không phụ thuộc chữ ký apiFetch của bạn.
+﻿import { API_BASE } from '@/app/lib/api';
 
-import { API_BASE } from '@/app/lib/api';
-
-// API_BASE của bạn KHÔNG gồm /api (api.ts tự ghép '/api/...'), nên ghép thêm ở đây
 const API_URL = `${API_BASE}/api`;
 
 async function getJson<T>(path: string): Promise<T> {
@@ -14,14 +10,13 @@ async function getJson<T>(path: string): Promise<T> {
             const data = await res.json();
             message = data?.message ?? message;
         } catch {
-            /* body không phải JSON */
+
         }
         throw new Error(message);
     }
     return (await res.json()) as T;
 }
 
-// Khớp với Models/Product.cs
 export interface Product {
     id: number;
     name: string;
