@@ -38,7 +38,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 var jwtSecretKey = builder.Configuration["JwtSettings:SecretKey"]
                 ?? builder.Configuration["AppSettings:Token"]
                 ?? throw new InvalidOperationException(
-                    "Chưa cấu hình khóa JWT. Hãy thêm JwtSettings:SecretKey (ít nhất 32 ký tự) vào appsettings.json.");
+                    "Chưa cấu hình khóa JWT. Hãy thêm JwtSettings:SecretKey vào appsettings.json.");
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>

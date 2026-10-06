@@ -20,5 +20,6 @@
         public string? Brand { get; set; }
         public string? Ram { get; set; }
         public string? Gpu { get; set; }
+
     }
 }

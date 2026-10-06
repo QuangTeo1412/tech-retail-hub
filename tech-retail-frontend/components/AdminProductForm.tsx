@@ -36,7 +36,6 @@ const inputClass = (hasError: boolean) =>
     `w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none transition-colors ${hasError ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-blue-500'
     }`;
 
-/* Thông báo lỗi dưới ô nhập: chữ đỏ, in đậm (thay cho bong bóng cảnh báo mặc định của trình duyệt) */
 function FieldError({ id, message }: { id: string; message?: string }) {
     if (!message) return null;
     return (
@@ -64,7 +63,6 @@ interface AdminProductFormProps {
     onSaved: () => void;
 }
 
-/** Cửa sổ thêm / sửa sản phẩm, có chọn ảnh (upload lên backend) hoặc dán link ảnh có sẵn. */
 export default function AdminProductForm({ product, onClose, onSaved }: AdminProductFormProps) {
     const [shownProduct, setShownProduct] = useState(product);
     const [form, setForm] = useState<ProductFormValues>(() => productToForm(product));

@@ -1,7 +1,6 @@
 ﻿
 export const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:5000';
 
-/** Sản phẩm trả về từ GET /api/Products. Các field ngoài id/name/price đều có thể thiếu. */
 export interface Product {
     id: number;
     name: string;
@@ -32,7 +31,6 @@ export function getToken(): string | null {
     }
 }
 
-/** Xóa thông tin đăng nhập (dùng khi token hết hạn) và báo cho các trang khác biết để cập nhật giao diện. */
 export function clearSession() {
     try {
         localStorage.removeItem('token');
@@ -75,7 +73,6 @@ function extractMessage(data: unknown): string | null {
 
 type ApiOptions = RequestInit & { auth?: boolean };
 
-/** Upload 1 ảnh (chỉ Admin). Trả về đường dẫn tương đối để lưu vào Product.imageUrl. */
 export async function uploadImage(file: File): Promise<{ url: string; fullUrl: string }> {
     const formData = new FormData();
     formData.append('file', file);
