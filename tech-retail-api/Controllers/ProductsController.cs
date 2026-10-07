@@ -1,271 +1,305 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using ProductManagementAPI.Models;
+﻿    using Microsoft.AspNetCore.Authorization;
+    using Microsoft.AspNetCore.Mvc;
+    using Microsoft.EntityFrameworkCore;
+    using ProductManagementAPI.Models;
 
-namespace ProductManagementAPI.Controllers
-{
-    [Route("api/[controller]")]
-    [ApiController]
-    public class ProductsController : ControllerBase
+    namespace ProductManagementAPI.Controllers
     {
-        private readonly AppDbContext _context;
-
-        public ProductsController(AppDbContext context)
+        [Route("api/[controller]")]
+        [ApiController]
+        public class ProductsController : ControllerBase
         {
-            _context = context;
-        }
+            private readonly AppDbContext _context;
 
-        [HttpGet]
-        [AllowAnonymous]
-        public async Task<IActionResult> GetProducts([FromQuery] ProductParams productParams)
-        {
-            var query = _context.Products.AsQueryable();
-
-            if (!string.IsNullOrWhiteSpace(productParams.Search))
+            public ProductsController(AppDbContext context)
             {
-                var searchLower = productParams.Search.ToLower();
-                query = query.Where(p => p.Name.ToLower().Contains(searchLower));
+                _context = context;
             }
 
-            if (!string.IsNullOrWhiteSpace(productParams.Category))
+            [HttpGet]
+            [AllowAnonymous]
+            public async Task<IActionResult> GetProducts([FromQuery] ProductParams productParams)
             {
-                query = query.Where(p => p.Category == productParams.Category);
+                var query = _context.Products.AsQueryable();
+
+                if (!string.IsNullOrWhiteSpace(productParams.Search))
+                {
+                    var searchLower = productParams.Search.ToLower();
+                    query = query.Where(p => p.Name.ToLower().Contains(searchLower));
+                }
+
+                if (!string.IsNullOrWhiteSpace(productParams.Category))
+                {
+                    query = query.Where(p => p.Category == productParams.Category);
+                }
+
+                if (!string.IsNullOrWhiteSpace(productParams.Brand))
+                {
+                    var brandLower = productParams.Brand.ToLower();
+                    query = query.Where(p => p.Brand.ToLower() == brandLower);
+                }
+
+                if (!string.IsNullOrWhiteSpace(productParams.Ram))
+                {
+                    query = query.Where(p => p.Ram == productParams.Ram);
+                }
+
+                if (!string.IsNullOrWhiteSpace(productParams.Gpu))
+                {
+                    var gpuLower = productParams.Gpu.ToLower();
+                    query = query.Where(p => p.Gpu != null && p.Gpu.ToLower().Contains(gpuLower));
+                }
+
+                if (productParams.MinPrice.HasValue)
+                {
+                    query = query.Where(p => p.Price >= productParams.MinPrice.Value);
+                }
+                if (productParams.MaxPrice.HasValue)
+                {
+                    query = query.Where(p => p.Price <= productParams.MaxPrice.Value);
+                }
+
+                query = productParams.SortBy switch
+                {
+                    "priceAsc" => query.OrderBy(p => p.Price),
+                    "priceDesc" => query.OrderByDescending(p => p.Price),
+                    "name" => query.OrderBy(p => p.Name),
+                    _ => query.OrderByDescending(p => p.Id)
+                };
+
+                var totalItems = await query.CountAsync();
+                var products = await query
+                    .Skip((productParams.PageNumber - 1) * productParams.PageSize)
+                    .Take(productParams.PageSize)
+                    .ToListAsync();
+
+                return Ok(new
+                {
+                    TotalItems = totalItems,
+                    PageNumber = productParams.PageNumber,
+                    PageSize = productParams.PageSize,
+                    TotalPages = (int)Math.Ceiling(totalItems / (double)productParams.PageSize),
+                    Data = products
+                });
             }
 
-            if (!string.IsNullOrWhiteSpace(productParams.Brand))
+            [HttpGet("filters")]
+            [AllowAnonymous]
+            public async Task<IActionResult> GetFilterOptions()
             {
-                var brandLower = productParams.Brand.ToLower();
-                query = query.Where(p => p.Brand.ToLower() == brandLower);
+                var brands = await _context.Products
+                    .Where(p => p.Brand != "")
+                    .Select(p => p.Brand)
+                    .Distinct()
+                    .OrderBy(b => b)
+                    .ToListAsync();
+
+                var rams = await _context.Products
+                    .Where(p => p.Ram != null && p.Ram != "")
+                    .Select(p => p.Ram!)
+                    .Distinct()
+                    .OrderBy(r => r)
+                    .ToListAsync();
+
+                var gpus = await _context.Products
+                    .Where(p => p.Gpu != null && p.Gpu != "")
+                    .Select(p => p.Gpu!)
+                    .Distinct()
+                    .OrderBy(g => g)
+                    .ToListAsync();
+
+                decimal minPrice = 0, maxPrice = 0;
+                if (await _context.Products.AnyAsync())
+                {
+                    minPrice = await _context.Products.MinAsync(p => p.Price);
+                    maxPrice = await _context.Products.MaxAsync(p => p.Price);
+                }
+
+                return Ok(new
+                {
+                    Brands = brands,
+                    Rams = rams,
+                    Gpus = gpus,
+                    MinPrice = minPrice,
+                    MaxPrice = maxPrice
+                });
             }
 
-            if (!string.IsNullOrWhiteSpace(productParams.Ram))
+            [HttpGet("{id:int}")]
+            public async Task<ActionResult<Product>> GetProduct(int id)
             {
-                query = query.Where(p => p.Ram == productParams.Ram);
+                var product = await _context.Products.FindAsync(id);
+
+                if (product == null)
+                {
+                    return NotFound("Không tìm thấy sản phẩm này!");
+                }
+
+                return product;
             }
 
-            if (!string.IsNullOrWhiteSpace(productParams.Gpu))
+            [HttpPost]
+            [Authorize(Roles = "Admin")]
+            public async Task<ActionResult<Product>> CreateProduct(Product product)
             {
-                var gpuLower = productParams.Gpu.ToLower();
-                query = query.Where(p => p.Gpu != null && p.Gpu.ToLower().Contains(gpuLower));
-            }
-
-            if (productParams.MinPrice.HasValue)
-            {
-                query = query.Where(p => p.Price >= productParams.MinPrice.Value);
-            }
-            if (productParams.MaxPrice.HasValue)
-            {
-                query = query.Where(p => p.Price <= productParams.MaxPrice.Value);
-            }
-
-            query = productParams.SortBy switch
-            {
-                "priceAsc" => query.OrderBy(p => p.Price),
-                "priceDesc" => query.OrderByDescending(p => p.Price),
-                "name" => query.OrderBy(p => p.Name),
-                _ => query.OrderByDescending(p => p.Id)
-            };
-
-            var totalItems = await query.CountAsync();
-            var products = await query
-                .Skip((productParams.PageNumber - 1) * productParams.PageSize)
-                .Take(productParams.PageSize)
-                .ToListAsync();
-
-            return Ok(new
-            {
-                TotalItems = totalItems,
-                PageNumber = productParams.PageNumber,
-                PageSize = productParams.PageSize,
-                TotalPages = (int)Math.Ceiling(totalItems / (double)productParams.PageSize),
-                Data = products
-            });
-        }
-
-        [HttpGet("filters")]
-        [AllowAnonymous]
-        public async Task<IActionResult> GetFilterOptions()
-        {
-            var brands = await _context.Products
-                .Where(p => p.Brand != "")
-                .Select(p => p.Brand)
-                .Distinct()
-                .OrderBy(b => b)
-                .ToListAsync();
-
-            var rams = await _context.Products
-                .Where(p => p.Ram != null && p.Ram != "")
-                .Select(p => p.Ram!)
-                .Distinct()
-                .OrderBy(r => r)
-                .ToListAsync();
-
-            var gpus = await _context.Products
-                .Where(p => p.Gpu != null && p.Gpu != "")
-                .Select(p => p.Gpu!)
-                .Distinct()
-                .OrderBy(g => g)
-                .ToListAsync();
-
-            decimal minPrice = 0, maxPrice = 0;
-            if (await _context.Products.AnyAsync())
-            {
-                minPrice = await _context.Products.MinAsync(p => p.Price);
-                maxPrice = await _context.Products.MaxAsync(p => p.Price);
-            }
-
-            return Ok(new
-            {
-                Brands = brands,
-                Rams = rams,
-                Gpus = gpus,
-                MinPrice = minPrice,
-                MaxPrice = maxPrice
-            });
-        }
-
-        [HttpGet("{id:int}")]
-        public async Task<ActionResult<Product>> GetProduct(int id)
-        {
-            var product = await _context.Products.FindAsync(id);
-
-            if (product == null)
-            {
-                return NotFound("Không tìm thấy sản phẩm này!");
-            }
-
-            return product;
-        }
-
-        [HttpPost]
-        [Authorize(Roles = "Admin")]
-        public async Task<ActionResult<Product>> CreateProduct(Product product)
-        {
-            _context.Products.Add(product);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction(nameof(GetProduct), new { id = product.Id }, product);
-        }
-
-        [HttpPut("{id:int}")]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> UpdateProduct(int id, Product product)
-        {
-            if (id != product.Id)
-            {
-                return BadRequest("ID không trùng khớp!");
-            }
-
-            _context.Entry(product).State = EntityState.Modified;
-            _context.Entry(product).Property(p => p.CreatedAt).IsModified = false;
-
-            try
-            {
+                _context.Products.Add(product);
                 await _context.SaveChangesAsync();
+
+                return CreatedAtAction(nameof(GetProduct), new { id = product.Id }, product);
             }
-            catch (DbUpdateConcurrencyException)
+
+            [HttpPut("{id:int}")]
+            [Authorize(Roles = "Admin")]
+            public async Task<IActionResult> UpdateProduct(int id, Product product)
             {
-                if (!_context.Products.Any(e => e.Id == id))
+                if (id != product.Id)
+                {
+                    return BadRequest("ID không trùng khớp!");
+                }
+
+                _context.Entry(product).State = EntityState.Modified;
+                _context.Entry(product).Property(p => p.CreatedAt).IsModified = false;
+
+                try
+                {
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    if (!_context.Products.Any(e => e.Id == id))
+                    {
+                        return NotFound();
+                    }
+                    throw;
+                }
+
+                return NoContent();
+            }
+
+            [HttpPut("{id:int}/image")]
+            [Authorize(Roles = "Admin")]
+            [ProducesResponseType(StatusCodes.Status200OK)]
+            [ProducesResponseType(StatusCodes.Status400BadRequest)]
+            [ProducesResponseType(StatusCodes.Status404NotFound)]
+            public async Task<IActionResult> SetImage(int id, [FromBody] SetImageRequest request)
+            {
+                var product = await _context.Products.FindAsync(id);
+                if (product == null)
+                {
+                    return NotFound(new { message = "Không tìm thấy sản phẩm này!" });
+                }
+
+                var imageUrl = request.ImageUrl?.Trim() ?? string.Empty;
+                if (imageUrl.Length > 0 && !IsValidImageUrl(imageUrl))
+                {
+                    return BadRequest(new { message = "Đường dẫn ảnh không hợp lệ. Dùng dạng /uploads/ten-file.jpg hoặc link bắt đầu bằng http(s)://" });
+                }
+
+                product.ImageUrl = imageUrl;
+                await _context.SaveChangesAsync();
+
+                return Ok(new { message = "Đã cập nhật ảnh sản phẩm.", imageUrl = product.ImageUrl });
+            }
+
+            [HttpDelete("{id:int}")]
+            [Authorize(Roles = "Admin")]
+            public async Task<IActionResult> DeleteProduct(int id)
+            {
+                var product = await _context.Products.FindAsync(id);
+                if (product == null)
                 {
                     return NotFound();
                 }
-                throw;
+
+                _context.Products.Remove(product);
+
+                try
+                {
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateException)
+                {
+                    return Conflict(new { message = "Sản phẩm đã có trong giỏ hàng hoặc đơn hàng nên không thể xóa. Bạn có thể đặt tồn kho về 0 để ngừng bán." });
+                }
+
+                return NoContent();
             }
 
-            return NoContent();
-        }
-
-        [HttpPut("{id:int}/image")]
-        [Authorize(Roles = "Admin")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> SetImage(int id, [FromBody] SetImageRequest request)
-        {
-            var product = await _context.Products.FindAsync(id);
-            if (product == null)
+            [HttpGet("featured")]
+            [AllowAnonymous]
+            public async Task<IActionResult> GetFeatured([FromQuery] int take = 12)
             {
-                return NotFound(new { message = "Không tìm thấy sản phẩm này!" });
+                var products = await _context.Products
+                    .Where(p => p.IsFeatured)
+                    .OrderBy(p => p.FeaturedOrder ?? int.MaxValue)
+                    .ThenByDescending(p => p.Id)
+                    .Take(take)
+                    .ToListAsync();
+
+                return Ok(products);
             }
 
-            var imageUrl = request.ImageUrl?.Trim() ?? string.Empty;
-            if (imageUrl.Length > 0 && !IsValidImageUrl(imageUrl))
+            [HttpGet("flash-sale")]
+            [AllowAnonymous]
+            public async Task<IActionResult> GetFlashSale([FromQuery] int take = 12)
             {
-                return BadRequest(new { message = "Đường dẫn ảnh không hợp lệ. Dùng dạng /uploads/ten-file.jpg hoặc link bắt đầu bằng http(s)://" });
+                var now = DateTime.UtcNow;
+                var products = await _context.Products
+                    .Where(p => p.SalePrice != null && p.SaleEndsAt != null && p.SaleEndsAt > now)
+                    .OrderBy(p => p.SaleEndsAt)
+                    .Take(take)
+                    .ToListAsync();
+
+                return Ok(products);
+            }
+            public class ToggleFeaturedRequest
+            {
+                public bool IsFeatured { get; set; }
+                public int? FeaturedOrder { get; set; }
             }
 
-            product.ImageUrl = imageUrl;
-            await _context.SaveChangesAsync();
-
-            return Ok(new { message = "Đã cập nhật ảnh sản phẩm.", imageUrl = product.ImageUrl });
-        }
-
-        [HttpDelete("{id:int}")]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> DeleteProduct(int id)
-        {
-            var product = await _context.Products.FindAsync(id);
-            if (product == null)
+            [HttpPut("{id:int}/featured")]
+            [Authorize(Roles = "Admin")]
+            public async Task<IActionResult> ToggleFeatured(int id, [FromBody] ToggleFeaturedRequest request)
             {
-                return NotFound();
-            }
+                var product = await _context.Products.FindAsync(id);
+                if (product == null)
+                {
+                    return NotFound(new { message = "Không tìm thấy sản phẩm này!" });
+                }
 
-            _context.Products.Remove(product);
+                product.IsFeatured = request.IsFeatured;
+                if (request.FeaturedOrder.HasValue)
+                {
+                    product.FeaturedOrder = request.FeaturedOrder;
+                }
 
-            try
-            {
                 await _context.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    message = product.IsFeatured ? "Đã đánh dấu nổi bật." : "Đã bỏ đánh dấu nổi bật.",
+                    id = product.Id,
+                    isFeatured = product.IsFeatured,
+                    featuredOrder = product.FeaturedOrder
+                });
             }
-            catch (DbUpdateException)
+
+
+            private static bool IsValidImageUrl(string url)
             {
-                return Conflict(new { message = "Sản phẩm đã có trong giỏ hàng hoặc đơn hàng nên không thể xóa. Bạn có thể đặt tồn kho về 0 để ngừng bán." });
+                if (url.StartsWith("/uploads/", StringComparison.Ordinal))
+                {
+                    return !url.Contains("..");
+                }
+
+                return Uri.TryCreate(url, UriKind.Absolute, out var uri)
+                       && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
             }
-
-            return NoContent();
         }
 
-        [HttpGet("featured")]
-        [AllowAnonymous]
-        public async Task<IActionResult> GetFeatured([FromQuery] int take = 12)
+        public class SetImageRequest
         {
-            var products = await _context.Products
-                .Where(p => p.IsFeatured)
-                .OrderBy(p => p.FeaturedOrder ?? int.MaxValue)
-                .ThenByDescending(p => p.Id)
-                .Take(take)
-                .ToListAsync();
-
-            return Ok(products);
-        }
-
-        [HttpGet("flash-sale")]
-        [AllowAnonymous]
-        public async Task<IActionResult> GetFlashSale([FromQuery] int take = 12)
-        {
-            var now = DateTime.UtcNow;
-            var products = await _context.Products
-                .Where(p => p.SalePrice != null && p.SaleEndsAt != null && p.SaleEndsAt > now)
-                .OrderBy(p => p.SaleEndsAt)
-                .Take(take)
-                .ToListAsync();
-
-            return Ok(products);
-        }
-        private static bool IsValidImageUrl(string url)
-        {
-            if (url.StartsWith("/uploads/", StringComparison.Ordinal))
-            {
-                return !url.Contains("..");
-            }
-
-            return Uri.TryCreate(url, UriKind.Absolute, out var uri)
-                   && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
-        }
+            public string ImageUrl { get; set; } = string.Empty;
+        }   
     }
-
-    public class SetImageRequest
-    {
-        public string ImageUrl { get; set; } = string.Empty;
-    }   
-}

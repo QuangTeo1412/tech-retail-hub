@@ -10,6 +10,7 @@ interface ProductFormValues {
     category: string;
     description: string;
     imageUrl: string;
+    isFeatured: boolean;
 }
 
 type FieldName = 'name' | 'price' | 'stock';
@@ -22,13 +23,14 @@ const EMPTY_FORM: ProductFormValues = {
     category: '',
     description: '',
     imageUrl: '',
+    isFeatured: false,
 };
 
 const FIELD_IDS: Record<FieldName, string> = {
     name: 'pf-name',
     price: 'pf-price',
     stock: 'pf-stock',
-};
+};  
 
 const LABEL_CLASS = 'block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1';
 
@@ -54,6 +56,7 @@ function productToForm(product: Product | null): ProductFormValues {
         category: product.category ?? '',
         description: product.description ?? '',
         imageUrl: typeof product.imageUrl === 'string' ? product.imageUrl : '',
+        isFeatured: Boolean((product as Product & { isFeatured?: boolean }).isFeatured),
     };
 }
 
@@ -143,6 +146,7 @@ export default function AdminProductForm({ product, onClose, onSaved }: AdminPro
             category: form.category.trim() || 'General',
             description: form.description.trim(),
             imageUrl: form.imageUrl.trim(),
+            isFeatured: form.isFeatured,
         };
 
         setSaving(true);
@@ -185,10 +189,12 @@ export default function AdminProductForm({ product, onClose, onSaved }: AdminPro
                     >
                         ×
                     </button>
+                    <th className="px-4 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">
+                        Nổi bật ⭐
+                    </th>
+
                 </div>
 
-                {/* noValidate: tắt bong bóng cảnh báo mặc định của trình duyệt (tiếng Anh, không chỉnh style được),
-                    dùng thông báo tiếng Việt tự viết (FieldError) ở dưới từng ô thay cho nó */}
                 <form onSubmit={handleSubmit} noValidate className="px-6 py-5 space-y-4">
                     {error && (
                         <div role="alert" className="p-3 bg-red-50 border border-red-200 text-red-600 text-xs rounded-xl font-bold">
@@ -265,6 +271,20 @@ export default function AdminProductForm({ product, onClose, onSaved }: AdminPro
                         />
                     </div>
 
+                    {/* Checkbox chọn sản phẩm nổi bật */}
+                    <div className="flex items-center gap-2 pt-1">
+                        <input
+                            id="pf-featured"
+                            type="checkbox"
+                            checked={form.isFeatured}
+                            onChange={(e) => setForm((prev) => ({ ...prev, isFeatured: e.target.checked }))}
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                        />
+                        <label htmlFor="pf-featured" className="text-xs font-bold text-slate-700 uppercase tracking-wide cursor-pointer select-none">
+                            Đánh dấu là sản phẩm nổi bật ⭐
+                        </label>
+                    </div>
+
                     <div>
                         <label htmlFor="pf-description" className={LABEL_CLASS}>
                             Mô tả
@@ -302,7 +322,6 @@ export default function AdminProductForm({ product, onClose, onSaved }: AdminPro
                             </label>
                         </div>
 
-                        {/* Nhập tay đường dẫn ảnh: dùng khi muốn dán link ảnh có sẵn thay vì upload */}
                         <input
                             type="text"
                             value={isUploadedFile ? '' : form.imageUrl}

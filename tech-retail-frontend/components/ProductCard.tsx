@@ -1,15 +1,32 @@
-﻿import Link from 'next/link';
+﻿import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { formatVnd, resolveImageUrl, type Product } from '../app/lib/api';
-
 interface ProductCardProps {
     item: Product;
     adding: boolean;
     onAdd: (product: Product) => void | Promise<void>;
 }
-
+function asNumber(value: unknown): number | undefined {
+    return typeof value === 'number' ? value : undefined;
+}
+function asDateString(value: unknown): string | undefined {
+    return typeof value === 'string' ? value : undefined;
+}
 export default function ProductCard({ item, adding, onAdd }: ProductCardProps) {
     const imageSrc = resolveImageUrl(item);
     const outOfStock = typeof item.stock === 'number' && item.stock <= 0;
+    const salePrice = asNumber(item.salePrice);
+    const saleEndsAt = asDateString(item.saleEndsAt);
+    const hasSaleFields = salePrice != null && salePrice < item.price && !!saleEndsAt;
+    const [now, setNow] = useState(() => Date.now());
+
+    useEffect(() => {
+        if (!hasSaleFields) return;
+        const timer = setInterval(() => setNow(Date.now()), 1000);
+        return () => clearInterval(timer);
+    }, [hasSaleFields]);
+
+    const isOnSale = hasSaleFields && new Date(saleEndsAt!).getTime() > now;
 
     return (
         <div className="w-[280px] flex-shrink-0 snap-start bg-white rounded-2xl p-4 border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col justify-between group">
@@ -19,6 +36,18 @@ export default function ProductCard({ item, adding, onAdd }: ProductCardProps) {
                         <span className="absolute top-2 left-2 z-10 bg-slate-800 text-white text-[9px] font-bold px-2 py-0.5 rounded uppercase">
                             Hết hàng
                         </span>
+                    )}
+                    {!outOfStock && isOnSale && (
+                        <>
+                            <span className="absolute top-2 left-2 z-10 bg-red-600 text-white text-[9px] font-bold px-2 py-0.5 rounded uppercase">
+                                Flash Sale
+                            </span>
+                            {/* Chấm đỏ nhấp nháy góc phải trên, báo hiệu sản phẩm đang sale */}
+                            <span className="absolute top-2 right-2 z-10 flex h-3 w-3" aria-hidden="true">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" />
+                                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-600" />
+                            </span>
+                        </> 
                     )}
                     {imageSrc ? (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -42,7 +71,14 @@ export default function ProductCard({ item, adding, onAdd }: ProductCardProps) {
             </Link>
 
             <div className="mt-4 space-y-2">
-                <span className="text-base font-extrabold text-blue-600 block">{formatVnd(item.price)}</span>
+                {isOnSale ? (
+                    <div>
+                        <span className="text-base font-extrabold text-red-600 block">{formatVnd(salePrice!)}</span>
+                        <span className="text-xs text-gray-400 line-through">{formatVnd(item.price)}</span>
+                    </div>
+                ) : (
+                    <span className="text-base font-extrabold text-blue-600 block">{formatVnd(item.price)}</span>
+                )}
 
                 <button
                     type="button"

@@ -42,7 +42,6 @@ namespace ProductManagementAPI
 
         public bool IsFeatured { get; set; } = false;
         public int? FeaturedOrder { get; set; }
-
         [Column(TypeName = "decimal(18,2)")]
         public decimal? SalePrice { get; set; }
         public DateTime? SaleEndsAt { get; set; }

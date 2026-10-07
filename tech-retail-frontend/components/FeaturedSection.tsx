@@ -25,14 +25,21 @@ export default function FeaturedSection({ searchQuery, onAddToCart }: FeaturedSe
     useEffect(() => {
         let cancelled = false;
 
-        const params = new URLSearchParams({ pageNumber: '1', pageSize: '12' });
-        if (query) params.set('search', query);
-
         (async () => {
             try {
-                const res = await apiFetch<{ data: Product[] }>(`/api/Products?${params.toString()}`, { auth: false });
+                let products: Product[];
+
+                if (query) {
+                    const params = new URLSearchParams({ pageNumber: '1', pageSize: '12', search: query });
+                    const res = await apiFetch<{ data: Product[] }>(`/api/Products?${params.toString()}`, { auth: false });
+                    products = Array.isArray(res.data) ? res.data : [];
+                } else {
+                    const res = await apiFetch<Product[]>('/api/Products/featured?take=12', { auth: false });
+                    products = Array.isArray(res) ? res : [];
+                }
+
                 if (!cancelled) {
-                    setResult({ key: requestKey, products: Array.isArray(res.data) ? res.data : [], failed: false });
+                    setResult({ key: requestKey, products, failed: false });
                 }
             } catch {
                 if (!cancelled) setResult({ key: requestKey, products: [], failed: true });
@@ -124,7 +131,7 @@ export default function FeaturedSection({ searchQuery, onAddToCart }: FeaturedSe
         <section className="max-w-7xl mx-auto px-4 py-6" aria-label="Sản phẩm nổi bật">
             <div className="mb-4 flex items-center justify-between gap-4">
                 <h2 className="text-xl font-extrabold uppercase text-slate-900 tracking-tight">
-                    {query ? `KẾT QUẢ CHO “${query}”` : 'SẢN PHẨM NỔI BẬT'}
+                    {query ? `KẾT QUẢ CHO "${query}"` : 'SẢN PHẨM NỔI BẬT'}
                 </h2>
                 {loadStatus === 'ready' && products.length > 0 && (
                     <div className="flex items-center gap-2">
@@ -161,7 +168,7 @@ export default function FeaturedSection({ searchQuery, onAddToCart }: FeaturedSe
 
             {loadStatus === 'ready' && products.length === 0 && (
                 <p className="text-sm text-gray-500">
-                    {query ? `Không tìm thấy sản phẩm nào cho “${query}”.` : 'Chưa có sản phẩm nào.'}
+                    {query ? `Không tìm thấy sản phẩm nào cho "${query}".` : 'Chưa có sản phẩm nổi bật nào được chọn.'}
                 </p>
             )}
 

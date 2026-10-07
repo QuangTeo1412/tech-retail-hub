@@ -1,21 +1,4 @@
-﻿import { API_BASE } from '@/app/lib/api';
-
-const API_URL = `${API_BASE}/api`;
-
-async function getJson<T>(path: string): Promise<T> {
-    const res = await fetch(`${API_URL}${path}`, { cache: 'no-store' });
-    if (!res.ok) {
-        let message = 'Không tải được dữ liệu, vui lòng thử lại.';
-        try {
-            const data = await res.json();
-            message = data?.message ?? message;
-        } catch {
-
-        }
-        throw new Error(message);
-    }
-    return (await res.json()) as T;
-}
+﻿import { apiFetch } from '../lib/api';
 
 export interface Product {
     id: number;
@@ -30,6 +13,10 @@ export interface Product {
     description: string;
     imageUrl: string;
     createdAt: string;
+    isFeatured?: boolean;
+    featuredOrder?: number | null;
+    salePrice?: number | null;
+    saleEndsAt?: string | null;
 }
 
 export interface PagedResult<T> {
@@ -85,11 +72,11 @@ export async function fetchProducts(params: FetchProductsParams): Promise<PagedR
     qs.set('pageNumber', String(params.page ?? 1));
     qs.set('pageSize', String(params.pageSize ?? DEFAULT_PAGE_SIZE));
 
-    return getJson<PagedResult<Product>>(`/products?${qs.toString()}`);
+    return apiFetch<PagedResult<Product>>(`/products?${qs.toString()}`);
 }
 
 export async function fetchFilterOptions(): Promise<FilterOptions> {
-    return getJson<FilterOptions>('/products/filters');
+    return apiFetch<FilterOptions>('/products/filters');
 }
 
 export const currencyFormatter = new Intl.NumberFormat('vi-VN', {
@@ -97,7 +84,7 @@ export const currencyFormatter = new Intl.NumberFormat('vi-VN', {
     currency: 'VND',
 });
 
-const API_ORIGIN = API_BASE;
+const API_ORIGIN = (process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:5000/api').replace(/\/api\/?$/, '');
 
 export function resolveImageUrl(imageUrl: string): string {
     if (!imageUrl) return '';

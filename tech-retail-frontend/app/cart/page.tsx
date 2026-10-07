@@ -441,8 +441,10 @@ export default function CartPage() {
                                 {appliedVoucher ? (
                                     <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-xl px-3 py-2">
                                         <div>
-                                            <p className="text-xs font-bold text-green-700">Mã "{appliedVoucher.code}" đã áp dụng</p>
-                                            <p className="text-[11px] text-green-600">Giảm {formatVnd(appliedVoucher.discountAmount)}</p>
+                                           <p className="text-xs font-bold text-green-700">
+                                            Mã &quot;{appliedVoucher.code}&quot; đã áp dụng
+                                           </p>
+                                           <p className="text-[11px] text-green-600">Giảm {formatVnd(appliedVoucher.discountAmount)}</p>
                                         </div>
                                         <button
                                             type="button"

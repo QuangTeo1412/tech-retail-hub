@@ -17,6 +17,7 @@ export default function AdminProductsPage() {
     const [search, setSearch] = useState('');
     const [formTarget, setFormTarget] = useState<'new' | Product | null>(null);
     const [deletingId, setDeletingId] = useState<number | null>(null);
+    const [togglingFeaturedId, setTogglingFeaturedId] = useState<number | null>(null);
     const [notice, setNotice] = useState('');
 
     const handleAuthError = useCallback(
@@ -78,6 +79,35 @@ export default function AdminProductsPage() {
         }
     };
 
+    const handleToggleFeatured = async (product: Product) => {
+        const nextFeatured = !(product.isFeatured === true);
+
+        setTogglingFeaturedId(product.id);
+        setNotice('');
+        try {
+            await apiFetch(`/api/Products/${product.id}/featured`, {
+                method: 'PUT',
+                body: JSON.stringify({ isFeatured: nextFeatured }),
+            });
+            setResult((prev) =>
+                prev
+                    ? {
+                        ...prev,
+                        products: prev.products.map((p) =>
+                            p.id === product.id ? { ...p, isFeatured: nextFeatured } : p
+                        ),
+                    }
+                    : prev
+            );
+        } catch (err) {
+            if (!handleAuthError(err)) {
+                setNotice(err instanceof Error ? err.message : 'Không thể cập nhật trạng thái nổi bật.');
+            }
+        } finally {
+            setTogglingFeaturedId(null);
+        }
+    };
+
     const handleSaved = () => {
         setFormTarget(null);
         setReloadKey((k) => k + 1);
@@ -121,6 +151,9 @@ export default function AdminProductsPage() {
                     <table className="w-full text-sm">
                         <thead>
                             <tr className="text-left text-[11px] font-bold text-gray-400 uppercase tracking-wide border-b border-gray-100">
+                                <th className="px-4 py-3 text-center" title="Sản phẩm nổi bật">
+                                    ★
+                                </th>
                                 <th className="px-4 py-3">Sản phẩm</th>
                                 <th className="px-4 py-3">Danh mục</th>
                                 <th className="px-4 py-3">Giá</th>
@@ -132,8 +165,27 @@ export default function AdminProductsPage() {
                             {products.map((product) => {
                                 const image = resolveImageUrl(product);
                                 const stock = typeof product.stock === 'number' ? product.stock : 0;
+                                const isFeatured = product.isFeatured === true;
                                 return (
                                     <tr key={product.id} className="border-b border-gray-50 last:border-0">
+                                        <td className="px-4 py-3 text-center">
+                                            <button
+                                                type="button"
+                                                onClick={() => handleToggleFeatured(product)}
+                                                disabled={togglingFeaturedId === product.id}
+                                                aria-pressed={isFeatured}
+                                                aria-label={
+                                                    isFeatured
+                                                        ? `Bỏ đánh dấu nổi bật: ${product.name}`
+                                                        : `Đánh dấu nổi bật: ${product.name}`
+                                                }
+                                                title={isFeatured ? 'Đang nổi bật — bấm để bỏ' : 'Bấm để đánh dấu nổi bật'}
+                                                className={`text-lg leading-none transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${isFeatured ? 'text-amber-400 hover:text-amber-500' : 'text-gray-300 hover:text-amber-400'
+                                                    }`}
+                                            >
+                                                {isFeatured ? '★' : '☆'}
+                                            </button>
+                                        </td>
                                         <td className="px-4 py-3">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-12 h-12 flex-shrink-0 rounded-lg overflow-hidden bg-gray-50 border border-gray-100 flex items-center justify-center">
