@@ -350,7 +350,7 @@ namespace ProductManagementAPI.Controllers
             var body = $@"<p>Xin chào {WebUtility.HtmlEncode(user.Username)},</p>
                 <p>Bạn (hoặc ai đó) vừa yêu cầu đặt lại mật khẩu cho tài khoản KAITO STORE. Liên kết có hiệu lực trong 1 giờ:</p>
                 <p><a href=""{link}"">{link}</a></p>
-                <p>Nếu không phải bạn yêu cầu, hãy bỏ qua email này.</p>";
+                <p>Nếu không phải bạn yêu cầu, vui lòng bỏ qua email này.</p>";
 
             try
             {

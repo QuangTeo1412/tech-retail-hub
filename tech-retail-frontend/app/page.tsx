@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import FeaturedSection from '../components/FeaturedSection';
+import FlashSaleSection from '../components/FlashSaleSection';
 import Footer from '../components/Footer';
 import Header from '../components/Header';
 import HeroSlider from '../components/HeroSlider';
@@ -64,6 +65,8 @@ export default function HomePage() {
                         <PromoBanners />
                     </div>
                 </section>
+
+                <FlashSaleSection onAddToCart={handleAddToCart} />
 
                 <FeaturedSection searchQuery={searchQuery} onAddToCart={handleAddToCart} />
 

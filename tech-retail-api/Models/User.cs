@@ -14,7 +14,6 @@
         public bool EmailConfirmed { get; set; } = false;
         public string? EmailVerificationToken { get; set; }
         public DateTime? EmailVerificationTokenExpires { get; set; }
-
         public string? PasswordResetToken { get; set; }
         public DateTime? PasswordResetTokenExpires { get; set; }
     }

@@ -224,6 +224,34 @@ namespace ProductManagementAPI.Controllers
 
             return NoContent();
         }
+
+        [HttpGet("featured")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetFeatured([FromQuery] int take = 12)
+        {
+            var products = await _context.Products
+                .Where(p => p.IsFeatured)
+                .OrderBy(p => p.FeaturedOrder ?? int.MaxValue)
+                .ThenByDescending(p => p.Id)
+                .Take(take)
+                .ToListAsync();
+
+            return Ok(products);
+        }
+
+        [HttpGet("flash-sale")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetFlashSale([FromQuery] int take = 12)
+        {
+            var now = DateTime.UtcNow;
+            var products = await _context.Products
+                .Where(p => p.SalePrice != null && p.SaleEndsAt != null && p.SaleEndsAt > now)
+                .OrderBy(p => p.SaleEndsAt)
+                .Take(take)
+                .ToListAsync();
+
+            return Ok(products);
+        }
         private static bool IsValidImageUrl(string url)
         {
             if (url.StartsWith("/uploads/", StringComparison.Ordinal))

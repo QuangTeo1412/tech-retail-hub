@@ -62,9 +62,27 @@ namespace ProductManagementAPI.Controllers
                 }
             }
 
+            decimal subtotal = cartItems.Sum(c => c.Quantity * c.Product!.Price);
+            decimal discount = 0;
+            Voucher? appliedVoucher = null;
+
+            if (!string.IsNullOrWhiteSpace(request.VoucherCode))
+            {
+                var (voucher, error) = await VoucherController.ValidateAsync(_context, request.VoucherCode, subtotal);
+                if (error != null) return BadRequest(new { Message = error });
+
+                appliedVoucher = voucher;
+                discount = VoucherController.CalculateDiscount(voucher!, subtotal);
+            }
+
             foreach (var item in cartItems)
             {
                 item.Product!.Stock -= item.Quantity;
+            }
+
+            if (appliedVoucher != null)
+            {
+                appliedVoucher.UsedCount += 1;
             }
 
             var order = new Order
@@ -72,7 +90,7 @@ namespace ProductManagementAPI.Controllers
                 UserId = userId,
                 OrderDate = DateTime.Now,
                 Status = "Pending",
-                TotalAmount = cartItems.Sum(c => c.Quantity * c.Product!.Price),
+                TotalAmount = subtotal - discount,
                 OrderItems = cartItems.Select(c => new OrderItem
                 {
                     ProductId = c.ProductId,
@@ -86,7 +104,7 @@ namespace ProductManagementAPI.Controllers
 
             await _context.SaveChangesAsync();
 
-            return Ok(new { Message = "Đặt hàng thành công!", OrderId = order.Id, Total = order.TotalAmount });
+            return Ok(new { Message = "Đặt hàng thành công!", OrderId = order.Id, Total = order.TotalAmount, Discount = discount });
         }
 
         [HttpGet("my-orders")]
@@ -162,5 +180,6 @@ namespace ProductManagementAPI.Controllers
     public class CheckoutRequestDto
     {
         public List<int> CartItemIds { get; set; } = new();
+        public string? VoucherCode { get; set; }
     }
 }
