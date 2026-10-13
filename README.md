@@ -83,7 +83,7 @@ KaitoStore là dự án thương mại điện tử chuyên cung cấp các dòn
 
 **Mua sắm**
 - [✔] Mã giảm giá, flash sale, sản phẩm nổi bật do admin tự chọn.
-- [ ] Tra cứu bảo hành điện tử.
+- [✔] Tra cứu bảo hành điện tử.
 
 **Quản trị**
 - [ ] Quản lý người dùng (xem danh sách, khóa/mở khóa tài khoản, cấp quyền Admin qua giao diện thay vì sửa thẳng database).
