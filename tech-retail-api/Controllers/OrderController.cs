@@ -15,21 +15,27 @@ namespace ProductManagementAPI.Controllers
         private readonly AppDbContext _context;
         private readonly IEmailService _emailService;
         private readonly ILogger<OrderController> _logger;
+        private readonly WarrantyService _warrantyService;
 
-        public OrderController(AppDbContext context, IEmailService emailService, ILogger<OrderController> logger)
+        public OrderController(
+            AppDbContext context,
+            IEmailService emailService,
+            ILogger<OrderController> logger,
+            WarrantyService warrantyService)
         {
             _context = context;
             _emailService = emailService;
             _logger = logger;
+            _warrantyService = warrantyService;
         }
 
         private int GetUserIdFromToken()
         {
-
             var userIdClaim = User.FindFirst("userId")?.Value
-                              ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-                              ?? User.FindFirst("id")?.Value
-                              ?? User.FindFirst("sub")?.Value;
+                        ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                        ?? User.FindFirst("id")?.Value
+                        ?? User.FindFirst("sub")?.Value;
+
             return int.TryParse(userIdClaim, out int userId) ? userId : 0;
         }
 
@@ -37,6 +43,7 @@ namespace ProductManagementAPI.Controllers
         public async Task<IActionResult> Checkout([FromBody] CheckoutRequestDto request)
         {
             var userId = GetUserIdFromToken();
+
             if (userId == 0)
                 return Unauthorized(new { Message = "Token không hợp lệ hoặc thiếu Id người dùng. Vui lòng đăng nhập lại." });
 
@@ -44,8 +51,8 @@ namespace ProductManagementAPI.Controllers
                 return BadRequest(new { Message = "Vui lòng chọn ít nhất một sản phẩm để thanh toán." });
 
             var cartItems = await _context.CartItems
-                .Include(c => c.Product)
-                .Where(c => c.UserId == userId && request.CartItemIds.Contains(c.Id))
+                .Include(cartItems => cartItems.Product)
+                .Where(cartItems => cartItems.UserId == userId && request.CartItemIds.Contains(cartItems.Id))
                 .ToListAsync();
 
             if (!cartItems.Any())
@@ -62,14 +69,17 @@ namespace ProductManagementAPI.Controllers
                 }
             }
 
-            decimal subtotal = cartItems.Sum(c => c.Quantity * c.Product!.Price);
+            decimal subtotal = cartItems.Sum(cartItems => cartItems.Quantity * cartItems.Product!.Price);
             decimal discount = 0;
+
             Voucher? appliedVoucher = null;
 
             if (!string.IsNullOrWhiteSpace(request.VoucherCode))
             {
                 var (voucher, error) = await VoucherController.ValidateAsync(_context, request.VoucherCode, subtotal);
-                if (error != null) return BadRequest(new { Message = error });
+
+                if (error != null)
+                    return BadRequest(new { Message = error });
 
                 appliedVoucher = voucher;
                 discount = VoucherController.CalculateDiscount(voucher!, subtotal);
@@ -91,11 +101,11 @@ namespace ProductManagementAPI.Controllers
                 OrderDate = DateTime.Now,
                 Status = "Pending",
                 TotalAmount = subtotal - discount,
-                OrderItems = cartItems.Select(c => new OrderItem
+                OrderItems = cartItems.Select(cartItems => new OrderItem
                 {
-                    ProductId = c.ProductId,
-                    Quantity = c.Quantity,
-                    Price = c.Product!.Price
+                    ProductId = cartItems.ProductId,
+                    Quantity = cartItems.Quantity,
+                    Price = cartItems.Product!.Price
                 }).ToList()
             };
 
@@ -104,21 +114,28 @@ namespace ProductManagementAPI.Controllers
 
             await _context.SaveChangesAsync();
 
-            return Ok(new { Message = "Đặt hàng thành công!", OrderId = order.Id, Total = order.TotalAmount, Discount = discount });
+            return Ok(new
+            {
+                Message = "Đặt hàng thành công!",
+                OrderId = order.Id,
+                Total = order.TotalAmount,
+                Discount = discount
+            });
         }
 
         [HttpGet("my-orders")]
         public async Task<IActionResult> GetMyOrders()
         {
             var userId = GetUserIdFromToken();
+
             if (userId == 0)
                 return Unauthorized(new { Message = "Token không hợp lệ hoặc thiếu Id người dùng. Vui lòng đăng nhập lại." });
 
             var orders = await _context.Orders
-                .Include(o => o.OrderItems)
-                .ThenInclude(oi => oi.Product)
-                .Where(o => o.UserId == userId)
-                .OrderByDescending(o => o.OrderDate)
+                .Include(order => order.OrderItems)
+                .ThenInclude(item => item.Product)
+                .Where(order => order.UserId == userId)
+                .OrderByDescending(order => order.OrderDate)
                 .ToListAsync();
 
             return Ok(orders);
@@ -129,28 +146,37 @@ namespace ProductManagementAPI.Controllers
         public async Task<IActionResult> GetAllOrders([FromQuery] string? status = null)
         {
             var query = _context.Orders.AsQueryable();
+
             if (!string.IsNullOrWhiteSpace(status))
             {
-                query = query.Where(o => o.Status == status);
+                query = query.Where(currentOrder => currentOrder.Status == status);
             }
 
             var orders = await query
-                .OrderByDescending(o => o.OrderDate)
-                .Select(o => new
+                .OrderByDescending(order => order.OrderDate)
+                .Select(order => new
                 {
-                    o.Id,
-                    o.UserId,
-                    Username = _context.Users.Where(u => u.Id == o.UserId).Select(u => u.Username).FirstOrDefault(),
-                    Email = _context.Users.Where(u => u.Id == o.UserId).Select(u => u.Email).FirstOrDefault(),
-                    o.OrderDate,
-                    o.TotalAmount,
-                    o.Status,
-                    Items = o.OrderItems.Select(oi => new
+                    order.Id,
+                    order.UserId,
+                    Username = _context.Users
+                        .Where(user => user.Id == order.UserId)
+                        .Select(user => user.Username)
+                        .FirstOrDefault(),
+                    Email = _context.Users
+                        .Where(user => user.Id == order.UserId)
+                        .Select(user => user.Email)
+                        .FirstOrDefault(),
+                    order.OrderDate,
+                    order.TotalAmount,
+                    order.Status,
+                    Items = order.OrderItems.Select(item => new
                     {
-                        oi.ProductId,
-                        ProductName = oi.Product != null ? oi.Product.Name : "(Sản phẩm đã xóa)",
-                        oi.Quantity,
-                        oi.Price
+                        item.ProductId,
+                        item.Quantity,
+                        item.Price,
+                        ProductName = item.Product != null
+                            ? item.Product.Name
+                            : "(Sản phẩm đã xóa)",
                     })
                 })
                 .ToListAsync();
@@ -160,20 +186,42 @@ namespace ProductManagementAPI.Controllers
 
         [HttpPut("{id}/status")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> UpdateOrderStatus(int id, [FromQuery] string newStatus)
+        public async Task<IActionResult> UpdateOrderStatus(
+            int id,
+            [FromQuery] string newStatus)
         {
-            var order = await _context.Orders.FindAsync(id);
+            var order = await _context.Orders
+                .Include(order => order.OrderItems)
+                .ThenInclude(item => item.Product)
+                .FirstOrDefaultAsync(order => order.Id == id);
+
             if (order == null)
                 return NotFound("Không tìm thấy đơn hàng.");
 
-            var validStatuses = new[] { "Pending", "Processing", "Shipped", "Delivered", "Cancelled" };
+            var validStatuses = new[]
+            {
+                "Pending", "Processing", "Shipped", "Delivered", "Cancelled"
+            };
+
             if (!validStatuses.Contains(newStatus))
                 return BadRequest("Trạng thái không hợp lệ. Chỉ chấp nhận: Pending, Processing, Shipped, Delivered, Cancelled.");
 
             order.Status = newStatus;
+
+            var warrantyCount = 0;
+
+            if (newStatus == "Delivered")
+            {
+                warrantyCount = await _warrantyService.IssueForOrderAsync(order, DateTime.Now);
+            }
+
             await _context.SaveChangesAsync();
 
-            return Ok(new { Message = $"Cập nhật trạng thái đơn hàng #{id} thành '{newStatus}' thành công!" });
+            return Ok(new
+            {
+                Message = $"Cập nhật trạng thái đơn hàng #{id} thành '{newStatus}' thành công!",
+                WarrantiesIssued = warrantyCount
+            });
         }
     }
 

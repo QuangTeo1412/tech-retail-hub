@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Be_Vietnam_Pro } from 'next/font/google';
 import { ApiError, apiFetch, clearSession, formatVnd, getToken, resolveImageUrl } from '../lib/api';
+import { formatWarrantyDate, WarrantyStatusBadge, type MyWarranty } from '../lib/warranty';
 
 const beVietnam = Be_Vietnam_Pro({
     subsets: ['vietnamese', 'latin'],
@@ -63,6 +64,14 @@ function formatDate(iso: string): string {
     }
 }
 
+function groupWarrantiesByOrder(list: MyWarranty[]): Record<number, MyWarranty[]> {
+    const map: Record<number, MyWarranty[]> = {};
+    for (const w of list) {
+        (map[w.orderId] ??= []).push(w);
+    }
+    return map;
+}
+
 function OrderItemRow({ item }: { item: OrderItemView }) {
     const name = item.product?.name ?? '(Sản phẩm đã bị xóa)';
     const image = resolveImageUrl({
@@ -97,9 +106,41 @@ function OrderItemRow({ item }: { item: OrderItemView }) {
     );
 }
 
+function OrderWarranties({ warranties }: { warranties: MyWarranty[] }) {
+    return (
+        <div className="mt-3 pt-3 border-t border-gray-100">
+            <p className="text-xs font-bold text-slate-700 mb-2">🛡️ Mã bảo hành</p>
+            <div className="space-y-2">
+                {warranties.map((w) => (
+                    <div
+                        key={w.code}
+                        className="flex flex-wrap items-center justify-between gap-2 bg-gray-50 border border-gray-100 rounded-xl px-3 py-2"
+                    >
+                        <div className="min-w-0">
+                            <p className="text-xs font-semibold text-slate-800 line-clamp-1">{w.productName}</p>
+                            <p className="text-xs font-mono text-gray-600">{w.code}</p>
+                            <p className="text-[11px] text-gray-500">Hết hạn: {formatWarrantyDate(w.endDate)}</p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <WarrantyStatusBadge status={w.status} />
+                            <Link
+                                href={`/tra-cuu-bao-hanh?code=${encodeURIComponent(w.code)}`}
+                                className="text-xs font-bold text-blue-600 hover:text-blue-700"
+                            >
+                                Tra cứu
+                            </Link>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
 export default function MyOrdersPage() {
     const router = useRouter();
     const [orders, setOrders] = useState<OrderView[]>([]);
+    const [warrantiesByOrder, setWarrantiesByOrder] = useState<Record<number, MyWarranty[]>>({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [payingId, setPayingId] = useState<number | null>(null);
@@ -125,8 +166,15 @@ export default function MyOrdersPage() {
         let cancelled = false;
         (async () => {
             try {
-                const data = await apiFetch<OrderView[]>('/api/Order/my-orders');
-                if (!cancelled) setOrders(data);
+                // Lỗi khi tải bảo hành không được làm hỏng trang đơn hàng
+                const [data, warranties] = await Promise.all([
+                    apiFetch<OrderView[]>('/api/Order/my-orders'),
+                    apiFetch<MyWarranty[]>('/api/Warranty/my').catch((): MyWarranty[] => []),
+                ]);
+                if (!cancelled) {
+                    setOrders(data);
+                    setWarrantiesByOrder(groupWarrantiesByOrder(warranties));
+                }
             } catch (err) {
                 if (cancelled) return;
                 if (!handleAuthError(err)) {
@@ -224,6 +272,10 @@ export default function MyOrdersPage() {
                                     <span className="text-sm font-bold text-slate-700">Tổng tiền</span>
                                     <span className="text-base font-extrabold text-blue-600">{formatVnd(order.totalAmount)}</span>
                                 </div>
+
+                                {warrantiesByOrder[order.id]?.length ? (
+                                    <OrderWarranties warranties={warrantiesByOrder[order.id]} />
+                                ) : null}
 
                                 {order.status === 'Pending' && (
                                     <button

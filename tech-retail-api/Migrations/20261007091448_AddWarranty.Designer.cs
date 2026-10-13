@@ -12,8 +12,8 @@ using ProductManagementAPI;
 namespace ProductManagementAPI.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20261007020516_AddFeaturedFlashSaleAndVouchers")]
-    partial class AddFeaturedFlashSaleAndVouchers
+    [Migration("20261007091448_AddWarranty")]
+    partial class AddWarranty
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -234,6 +234,56 @@ namespace ProductManagementAPI.Migrations
                     b.ToTable("Vouchers");
                 });
 
+            modelBuilder.Entity("ProductManagementAPI.Models.Warranty", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<DateTime>("EndDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsVoided")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("OrderId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("OrderItemId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.HasIndex("OrderId");
+
+                    b.HasIndex("OrderItemId");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Warranties");
+                });
+
             modelBuilder.Entity("ProductManagementAPI.Product", b =>
                 {
                     b.Property<int>("Id")
@@ -298,6 +348,11 @@ namespace ProductManagementAPI.Migrations
                     b.Property<int>("Stock")
                         .HasColumnType("int");
 
+                    b.Property<int>("WarrantyMonths")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(12);
+
                     b.HasKey("Id");
 
                     b.ToTable("Products");
@@ -358,6 +413,25 @@ namespace ProductManagementAPI.Migrations
                     b.Navigation("Product");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("ProductManagementAPI.Models.Warranty", b =>
+                {
+                    b.HasOne("OrderItem", "OrderItem")
+                        .WithMany()
+                        .HasForeignKey("OrderItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ProductManagementAPI.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("OrderItem");
+
+                    b.Navigation("Product");
                 });
 
             modelBuilder.Entity("ProductManagementAPI.Models.Order", b =>

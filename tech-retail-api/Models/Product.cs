@@ -45,5 +45,8 @@ namespace ProductManagementAPI
         [Column(TypeName = "decimal(18,2)")]
         public decimal? SalePrice { get; set; }
         public DateTime? SaleEndsAt { get; set; }
+
+        [Range(0, 12, ErrorMessage = "Thời hạn bảo hành từ 0 đến 12 tháng")]
+        public int WarrantyMonths { get; set; } = 12;
     }
 }

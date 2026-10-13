@@ -8,19 +8,24 @@ interface ProductFormValues {
     price: string;
     stock: string;
     category: string;
+    warrantyMonths: string;
     description: string;
     imageUrl: string;
     isFeatured: boolean;
 }
 
-type FieldName = 'name' | 'price' | 'stock';
+type FieldName = 'name' | 'price' | 'stock' | 'warrantyMonths';
 type FieldErrors = Partial<Record<FieldName, string>>;
+
+const DEFAULT_WARRANTY_MONTHS = 12;
+const MAX_WARRANTY_MONTHS = 120;
 
 const EMPTY_FORM: ProductFormValues = {
     name: '',
     price: '',
     stock: '0',
     category: '',
+    warrantyMonths: String(DEFAULT_WARRANTY_MONTHS),
     description: '',
     imageUrl: '',
     isFeatured: false,
@@ -30,7 +35,8 @@ const FIELD_IDS: Record<FieldName, string> = {
     name: 'pf-name',
     price: 'pf-price',
     stock: 'pf-stock',
-};  
+    warrantyMonths: 'pf-warranty',
+};
 
 const LABEL_CLASS = 'block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1';
 
@@ -54,6 +60,9 @@ function productToForm(product: Product | null): ProductFormValues {
         price: String(product.price),
         stock: String(product.stock ?? 0),
         category: product.category ?? '',
+        warrantyMonths: String(
+            typeof product.warrantyMonths === 'number' ? product.warrantyMonths : DEFAULT_WARRANTY_MONTHS
+        ),
         description: product.description ?? '',
         imageUrl: typeof product.imageUrl === 'string' ? product.imageUrl : '',
         isFeatured: Boolean((product as Product & { isFeatured?: boolean }).isFeatured),
@@ -111,6 +120,7 @@ export default function AdminProductForm({ product, onClose, onSaved }: AdminPro
         const errs: FieldErrors = {};
         const priceNumber = Number(form.price);
         const stockNumber = Number(form.stock);
+        const warrantyNumber = Number(form.warrantyMonths);
 
         if (!form.name.trim()) {
             errs.name = 'Vui lòng nhập tên sản phẩm.';
@@ -120,6 +130,14 @@ export default function AdminProductForm({ product, onClose, onSaved }: AdminPro
         }
         if (form.stock.trim() === '' || !Number.isFinite(stockNumber) || stockNumber < 0) {
             errs.stock = 'Số lượng tồn kho không được âm.';
+        }
+        if (
+            form.warrantyMonths.trim() === '' ||
+            !Number.isInteger(warrantyNumber) ||
+            warrantyNumber < 0 ||
+            warrantyNumber > MAX_WARRANTY_MONTHS
+        ) {
+            errs.warrantyMonths = `Thời hạn bảo hành phải là số nguyên từ 0 đến ${MAX_WARRANTY_MONTHS} tháng.`;
         }
 
         return errs;
@@ -139,11 +157,13 @@ export default function AdminProductForm({ product, onClose, onSaved }: AdminPro
         }
 
         const payload = {
+            ...(product ?? {}),
             id: product?.id ?? 0,
             name: form.name.trim(),
             price: Number(form.price),
             stock: Number(form.stock),
             category: form.category.trim() || 'General',
+            warrantyMonths: Number(form.warrantyMonths),
             description: form.description.trim(),
             imageUrl: form.imageUrl.trim(),
             isFeatured: form.isFeatured,
@@ -189,9 +209,6 @@ export default function AdminProductForm({ product, onClose, onSaved }: AdminPro
                     >
                         ×
                     </button>
-                    <th className="px-4 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">
-                        Nổi bật ⭐
-                    </th>
 
                 </div>
 
@@ -257,19 +274,43 @@ export default function AdminProductForm({ product, onClose, onSaved }: AdminPro
                         </div>
                     </div>
 
-                    <div>
-                        <label htmlFor="pf-category" className={LABEL_CLASS}>
-                            Danh mục
-                        </label>
-                        <input
-                            id="pf-category"
-                            type="text"
-                            placeholder="Laptop, Điện thoại, Linh kiện..."
-                            value={form.category}
-                            onChange={(e) => setForm((prev) => ({ ...prev, category: e.target.value }))}
-                            className={inputClass(false)}
-                        />
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label htmlFor="pf-category" className={LABEL_CLASS}>
+                                Danh mục
+                            </label>
+                            <input
+                                id="pf-category"
+                                type="text"
+                                placeholder="Laptop, Điện thoại, Linh kiện..."
+                                value={form.category}
+                                onChange={(e) => setForm((prev) => ({ ...prev, category: e.target.value }))}
+                                className={inputClass(false)}
+                            />
+                        </div>
+                        <div>
+                            <label htmlFor="pf-warranty" className={LABEL_CLASS}>
+                                Bảo hành (tháng)
+                            </label>
+                            <input
+                                id="pf-warranty"
+                                type="number"
+                                min="0"
+                                max={MAX_WARRANTY_MONTHS}
+                                step="1"
+                                inputMode="numeric"
+                                value={form.warrantyMonths}
+                                onChange={(e) => updateField('warrantyMonths', e.target.value)}
+                                aria-invalid={!!fieldErrors.warrantyMonths}
+                                aria-describedby="pf-warranty-hint"
+                                className={inputClass(!!fieldErrors.warrantyMonths)}
+                            />
+                            <FieldError id="pf-warranty-error" message={fieldErrors.warrantyMonths} />
+                        </div>
                     </div>
+                    <p id="pf-warranty-hint" className="-mt-2 text-[11px] text-gray-500">
+                        Mặc định 12 tháng. Nhập 0 nếu sản phẩm không có bảo hành (sẽ không được cấp mã bảo hành).
+                    </p>
 
                     {/* Checkbox chọn sản phẩm nổi bật */}
                     <div className="flex items-center gap-2 pt-1">
