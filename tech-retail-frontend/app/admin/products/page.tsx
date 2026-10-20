@@ -154,10 +154,10 @@ export default function AdminProductsPage() {
                                 <th className="px-4 py-3 text-center" title="Sản phẩm nổi bật">
                                     ★
                                 </th>
-                                <th className="px-4 py-3">Sản phẩm</th>
-                                <th className="px-4 py-3">Danh mục</th>
+                                <th className="px-4 py-3">Sản Phẩm</th>
+                                <th className="px-4 py-3">Danh Mục</th>
                                 <th className="px-4 py-3">Giá</th>
-                                <th className="px-4 py-3">Tồn kho</th>
+                                <th className="px-4 py-3">Tồn Kho</th>
                                 <th className="px-4 py-3" />
                             </tr>
                         </thead>

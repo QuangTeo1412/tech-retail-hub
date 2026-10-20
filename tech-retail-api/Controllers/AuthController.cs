@@ -67,6 +67,15 @@ namespace ProductManagementAPI.Controllers
                 return BadRequest(new { message = "Tài khoản hoặc mật khẩu không chính xác!" });
             }
 
+            if (user.IsLocked)
+            {
+                return BadRequest(new
+                {
+                    message = "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.",
+                    code = "ACCOUNT_LOCKED"
+                });
+            }
+
             if (!user.EmailConfirmed)
             {
                 return BadRequest(new

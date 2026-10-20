@@ -6,8 +6,6 @@ import { apiFetch, type Product } from '../app/lib/api';
 import { CARD_GAP, CARD_WIDTH, NO_SCROLLBAR } from '../app/lib/data';
 import { usePrefersReducedMotion } from '../app/lib/hooks';
 
-// Riêng khối Flash Sale chạy nhanh hơn carousel thường (5s thay vì 6s),
-// để tạo cảm giác gấp gáp đúng tinh thần "sale chớp nhoáng".
 const FLASH_SALE_AUTOPLAY_INTERVAL = 5000;
 
 interface FlashSaleSectionProps {

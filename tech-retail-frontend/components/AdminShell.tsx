@@ -10,6 +10,7 @@ const NAV_ITEMS = [
     { href: '/admin', label: 'Tổng quan', icon: '📊' },
     { href: '/admin/products', label: 'Sản phẩm', icon: '💻' },
     { href: '/admin/orders', label: 'Đơn hàng', icon: '🧾' },
+    { href: '/admin/users', label: 'Người dùng', icon: '👤' },
 ];
 
 /** Khung sườn cho toàn bộ trang /admin: kiểm tra đăng nhập + quyền Admin, sidebar điều hướng. */
